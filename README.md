@@ -8,6 +8,11 @@ git push origin main
 
 
 
+RUN:
+cd C:\Users\roige\Desktop\books-site\my-next-app
+npm run dev
+
+
 ## Getting Started
 
 First, run the development server:

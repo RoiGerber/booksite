@@ -6,6 +6,8 @@ import { motion } from 'framer-motion'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { BookOpen, Headphones, ShoppingCart, ChevronDown } from 'lucide-react'
+import PDFViewer from "@/components/PDFViewer"; // Import your PDFViewer component
+import { Dialog } from "@headlessui/react"; // Install if not already: npm install @headlessui/react
 
 export default function Home() {
   return (
@@ -200,26 +202,31 @@ function RecommendationsSection() {
   )
 }
 
-function ExampleChaptersSection() {
-  const [activeChapter, setActiveChapter] = useState(0)
+
+
+export function ExampleChaptersSection() {
+  const [activeChapter, setActiveChapter] = useState(0);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const chapters = [
-    { 
-      title: "עשרה פרקים על - כשעבדות מפסיקה לעבוד", 
-      content: "עבדות. איזה באסה זה. העבדות התקיימה מאז ומתמיד. עוד לפני שמדינות הפכו למדינות, לפני שהייתה להן חוקה ולפני שקמה להן מערכת משפטית במובן המודרני של המילה.", 
-      pdfUrl: "/pdfs/slavery.pdf" 
+    {
+      title: "עשרה פרקים על - כשעבדות מפסיקה לעבוד",
+      content: "עבדות. איזה באסה זה. העבדות התקיימה מאז ומתמיד. עוד לפני שמדינות הפכו למדינות, לפני שהייתה להן חוקה ולפני שקמה להן מערכת משפטית במובן המודרני של המילה...",
+      pdfUrl: "/pdfs/slavery.pdf",
     },
-    { 
-      title: "תנו למספרים לדבר - מלכת המדעים", 
-      content: "מה כל כך מיוחד במתמטיקה? במה היא שונה מהפיזיקה, מהביולוגיה, מהמוזיקה, מהאסטרונומיה, או מהפסיכולוגיה? הדעות כמובן מגוונות, ואין תשובה אחת נכונה – פילוסופיה זה לא מדע מדויק, בניגוד למתמטיקה שהיא בדיוק כן. ואולי פה קבור הכלב.", 
-      pdfUrl: "/pdfs/scienceQueen.pdf" 
+    {
+      title: "תנו למספרים לדבר - מלכת המדעים",
+      content: "מה כל כך מיוחד במתמטיקה? במה היא שונה מהפיזיקה, מהביולוגיה, מהמוזיקה, מהאסטרונומיה, או מהפסיכולוגיה? הדעות כמובן מגוונות, ואין תשובה אחת נכונה – פילוסופיה זה לא מדע מדויק, בניגוד למתמטיקה שהיא בדיוק כן. ואולי פה קבור הכלב...",
+      pdfUrl: "/pdfs/scienceQueen.pdf",
     },
-  ]
+  ];
 
   return (
     <section className="py-20 bg-gradient-to-br from-indigo-50 to-purple-50">
       <div className="container mx-auto px-4">
-        <h2 className="text-4xl font-bold text-center mb-16 text-indigo-900">פרקים לדוגמה</h2>
+        <h2 className="text-4xl font-bold text-center mb-16 text-indigo-900">
+          פרקים לדוגמה
+        </h2>
         <div className="max-w-4xl mx-auto">
           <div className="flex mb-8">
             {chapters.map((chapter, index) => (
@@ -241,22 +248,36 @@ function ExampleChaptersSection() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
               >
-                <h3 className="text-2xl font-semibold mb-6 text-indigo-800">{chapters[activeChapter].title}</h3>
-                <p className="text-lg mb-6 text-indigo-700">{chapters[activeChapter].content}</p>
-                <a href={chapters[activeChapter].pdfUrl} target="_blank" rel="noopener noreferrer">
-                  <Button variant="outline" className="flex items-center">
-                    <BookOpen className="mr-2" />
-                    קרא עוד
-                  </Button>
-                </a>
+                <h3 className="text-2xl font-semibold mb-6 text-indigo-800">
+                  {chapters[activeChapter].title}
+                </h3>
+                <p className="text-lg mb-6 text-indigo-700">
+                  {chapters[activeChapter].content}
+                </p>
+                <Button
+                  variant="outline"
+                  className="flex items-center"
+                  onClick={() => setIsModalOpen(true)}
+                >
+                  קרא עוד
+                </Button>
               </motion.div>
             </CardContent>
           </Card>
         </div>
       </div>
+
+      {/* Modal for PDF Viewer */}
+      <PDFViewer
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        fileUrl={chapters[activeChapter].pdfUrl}
+        title={chapters[activeChapter].title}
+      />
     </section>
-  )
+  );
 }
+
 
 
 function PurchaseSection() {

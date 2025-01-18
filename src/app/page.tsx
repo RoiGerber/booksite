@@ -5,9 +5,8 @@ import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { BookOpen, Headphones, ShoppingCart, ChevronDown } from 'lucide-react'
+import { Headphones, ShoppingCart, ChevronDown } from 'lucide-react'
 import PDFViewer from "@/components/PDFViewer"; // Import your PDFViewer component
-import { Dialog } from "@headlessui/react"; // Install if not already: npm install @headlessui/react
 
 export default function Home() {
   return (

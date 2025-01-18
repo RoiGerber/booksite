@@ -140,7 +140,7 @@ function RecommendationsSection() {
             >
               <Card className="h-full bg-gradient-to-br from-indigo-50 to-purple-50 hover:shadow-lg transition-shadow duration-300">
                 <CardContent className="p-8 flex flex-col justify-between h-full">
-                  <p className="text-lg mb-6 text-indigo-800">'{rec.text}'</p>
+                  <p className="text-lg mb-6 text-indigo-800">&apos'{rec.text}&apos'</p>
                   <p className="text-sm text-indigo-600 text-left">- {rec.author}</p>
                 </CardContent>
               </Card>

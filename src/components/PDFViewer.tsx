@@ -1,7 +1,14 @@
 import { Dialog } from "@headlessui/react"; // For modal functionality
 import { Button } from "@/components/ui/button";
 
-export default function PDFViewer({ isOpen, onClose, fileUrl, title }) {
+interface PDFViewerProps {
+  isOpen: boolean;
+  onClose: () => void;
+  fileUrl: string;
+  title: string;
+}
+
+export default function PDFViewer({ isOpen, onClose, fileUrl, title }: PDFViewerProps) {
   return (
     <>
       {isOpen && (

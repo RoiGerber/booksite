@@ -81,7 +81,7 @@ function BooksShowcase() {
 }
 
 function PodcastsSection() {
-  const [hoveredPodcast, setHoveredPodcast] = useState(null);
+  const [hoveredPodcast, setHoveredPodcast] = useState<number | null>(null);
 
   const podcasts = [
     { 
@@ -278,4 +278,3 @@ function PurchaseSection() {
     </section>
   )
 }
-

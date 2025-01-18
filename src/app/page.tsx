@@ -36,9 +36,9 @@ function HeroSection() {
           height={200}
           className="rounded-full mx-auto mb-8 border-4 border-white shadow-lg"
         />
-        <h1 className="text-5xl font-bold mb-4 text-indigo-900">שם הסופר</h1>
-        <p className="text-xl text-indigo-700 max-w-2xl mx-auto mb-8">סופר ישראלי מוערך, מחבר של שני ספרים מרתקים שכבשו את לב הקוראים</p>
-        <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-white">גלה עוד</Button>
+        <h1 className="text-5xl font-bold mb-4 text-indigo-900">רועי בנימין גרבר</h1>
+        <p className="text-xl text-indigo-700 max-w-2xl mx-auto mb-8">סופר, מתמטיקאי והיסטוריון חובב, בוגר תואר ראשון במדעי המחשב. רועי מפתח תוכנה באמזון.</p>
+        <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-white">לרכישה</Button>
       </motion.div>
       <motion.div
         animate={{ y: [0, 10, 0] }}
@@ -81,16 +81,30 @@ function BooksShowcase() {
 }
 
 function PodcastsSection() {
+  const [hoveredPodcast, setHoveredPodcast] = useState(null);
+
   const podcasts = [
-    { title: "פרק 1: מסע הכתיבה", duration: "45:30" },
-    { title: "פרק 2: השראה ויצירתיות", duration: "38:15" },
-    { title: "פרק 3: טיפים לכותבים מתחילים", duration: "52:00" },
-  ]
+    { 
+      title: "ראיון בתכנית הבוקר פותחים יום בערוץ 13", 
+      duration: "05:14", 
+      videoUrl: "https://www.youtube.com//embed/H6zkVOq23Bs" 
+    },
+    { 
+      title: "ראיון לפודקאסט על המשמעות על ההיסטוריה של העולם", 
+      duration: "38:15", 
+      videoUrl: "https://www.youtube.com/embed/2j7kPqwSjLU" 
+    },
+    { 
+      title: "ראיון לפודקאסט דרך המחשבה על הפילוסופיה של המתמטיקה", 
+      duration: "52:00", 
+      videoUrl: "https://www.youtube.com/embed/GZY7-nVpDAo",
+    },
+  ];
 
   return (
     <section className="py-20 bg-gradient-to-br from-purple-50 to-indigo-50">
       <div className="container mx-auto px-4">
-        <h2 className="text-4xl font-bold text-center mb-16 text-indigo-900">הפודקאסט שלי</h2>
+        <h2 className="text-4xl font-bold text-center mb-16 text-indigo-900">ראיונות</h2>
         <div className="max-w-3xl mx-auto space-y-6">
           {podcasts.map((podcast, index) => (
             <motion.div
@@ -98,6 +112,8 @@ function PodcastsSection() {
               initial={{ opacity: 0, x: -50 }}
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
+              onMouseEnter={() => setHoveredPodcast(index)}
+              onMouseLeave={() => setHoveredPodcast(null)}
             >
               <Card className="overflow-hidden">
                 <CardContent className="flex items-center justify-between p-6">
@@ -108,16 +124,41 @@ function PodcastsSection() {
                       <p className="text-sm text-gray-500">{podcast.duration}</p>
                     </div>
                   </div>
-                  <Button variant="outline" className="bg-white hover:bg-indigo-50">האזן עכשיו</Button>
+                  <Button variant="outline" className="bg-white hover:bg-indigo-50">
+                    האזן עכשיו
+                  </Button>
                 </CardContent>
               </Card>
+
+              {/* YouTube Video Section */}
+              {hoveredPodcast === index && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="mt-4 overflow-hidden"
+                >
+                  <div className="relative w-full aspect-video">
+                    <iframe
+                      src={podcast.videoUrl}
+                      title={podcast.title}
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="w-full h-full rounded-lg shadow-lg"
+                    ></iframe>
+                  </div>
+                </motion.div>
+              )}
             </motion.div>
           ))}
         </div>
       </div>
     </section>
-  )
+  );
 }
+
 
 function RecommendationsSection() {
   const recommendations = [

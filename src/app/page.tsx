@@ -81,7 +81,8 @@ function BooksShowcase() {
 }
 
 function PodcastsSection() {
-  const [hoveredPodcast, setHoveredPodcast] = useState<number | null>(null);
+  // Track the currently active podcast (or null if none is active)
+  const [activePodcast, setActivePodcast] = useState<number | null>(null);
 
   const podcasts = [
     { 
@@ -91,15 +92,19 @@ function PodcastsSection() {
     },
     { 
       title: "ראיון לפודקאסט על המשמעות על ההיסטוריה של העולם", 
-      duration: "38:15", 
+      duration: "40:28", 
       videoUrl: "https://www.youtube.com/embed/2j7kPqwSjLU" 
     },
     { 
       title: "ראיון לפודקאסט דרך המחשבה על הפילוסופיה של המתמטיקה", 
-      duration: "52:00", 
+      duration: "56:08", 
       videoUrl: "https://www.youtube.com/embed/GZY7-nVpDAo",
     },
   ];
+
+  const togglePodcast = (index: number) => {
+    setActivePodcast(activePodcast === index ? null : index); // Toggle the active podcast
+  };
 
   return (
     <section className="py-20 bg-gradient-to-br from-purple-50 to-indigo-50">
@@ -112,8 +117,6 @@ function PodcastsSection() {
               initial={{ opacity: 0, x: -50 }}
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              onMouseEnter={() => setHoveredPodcast(index)}
-              onMouseLeave={() => setHoveredPodcast(null)}
             >
               <Card className="overflow-hidden">
                 <CardContent className="flex items-center justify-between p-6">
@@ -124,14 +127,18 @@ function PodcastsSection() {
                       <p className="text-sm text-gray-500">{podcast.duration}</p>
                     </div>
                   </div>
-                  <Button variant="outline" className="bg-white hover:bg-indigo-50">
+                  <Button
+                    variant="outline"
+                    className="bg-white hover:bg-indigo-50"
+                    onClick={() => togglePodcast(index)} // Handle button click
+                  >
                     האזן עכשיו
                   </Button>
                 </CardContent>
               </Card>
 
               {/* YouTube Video Section */}
-              {hoveredPodcast === index && (
+              {activePodcast === index && (
                 <motion.div
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
@@ -197,8 +204,16 @@ function ExampleChaptersSection() {
   const [activeChapter, setActiveChapter] = useState(0)
 
   const chapters = [
-    { title: "פרק לדוגמא מתוך 'עשרה פרקים על'", content: "זהו הטקסט הראשון של הפרק הראשון. כאן תוכלו לקרוא כמה עמודים ולהתרשם מסגנון הכתיבה והעלילה..." },
-    { title: "פרק לדוגמא מתוך 'תנו למספרים לדבר'", content: "זהו הטקסט הראשון של הפרק הראשון מהספר השני. גם כאן תוכלו להתרשם מההתפתחות בכתיבה ובסיפור..." },
+    { 
+      title: "עשרה פרקים על - כשעבדות מפסיקה לעבוד", 
+      content: "עבדות. איזה באסה זה. העבדות התקיימה מאז ומתמיד. עוד לפני שמדינות הפכו למדינות, לפני שהייתה להן חוקה ולפני שקמה להן מערכת משפטית במובן המודרני של המילה.", 
+      pdfUrl: "/pdfs/slavery.pdf" 
+    },
+    { 
+      title: "תנו למספרים לדבר - מלכת המדעים", 
+      content: "מה כל כך מיוחד במתמטיקה? במה היא שונה מהפיזיקה, מהביולוגיה, מהמוזיקה, מהאסטרונומיה, או מהפסיכולוגיה? הדעות כמובן מגוונות, ואין תשובה אחת נכונה – פילוסופיה זה לא מדע מדויק, בניגוד למתמטיקה שהיא בדיוק כן. ואולי פה קבור הכלב.", 
+      pdfUrl: "/pdfs/scienceQueen.pdf" 
+    },
   ]
 
   return (
@@ -228,10 +243,12 @@ function ExampleChaptersSection() {
               >
                 <h3 className="text-2xl font-semibold mb-6 text-indigo-800">{chapters[activeChapter].title}</h3>
                 <p className="text-lg mb-6 text-indigo-700">{chapters[activeChapter].content}</p>
-                <Button variant="outline" className="flex items-center">
-                  <BookOpen className="mr-2" />
-                  קרא עוד
-                </Button>
+                <a href={chapters[activeChapter].pdfUrl} target="_blank" rel="noopener noreferrer">
+                  <Button variant="outline" className="flex items-center">
+                    <BookOpen className="mr-2" />
+                    קרא עוד
+                  </Button>
+                </a>
               </motion.div>
             </CardContent>
           </Card>
@@ -240,6 +257,7 @@ function ExampleChaptersSection() {
     </section>
   )
 }
+
 
 function PurchaseSection() {
   return (

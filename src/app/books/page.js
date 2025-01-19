@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight, Star, ShoppingCart, Heart } from 'lucide-react'
@@ -11,16 +11,26 @@ import { useSearchParams } from 'next/navigation'
 
 export default function BookProductPage() {
   const searchParams = useSearchParams(); // Use the hook to get query params
-  const bookData = searchParams?.get('bookData'); // Extract the bookData parameter
-
+  const [book, setBook] = useState(null); // Initialize state for book data
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
 
-  if (!bookData) {
+  // UseEffect to parse bookData only once
+  useEffect(() => {
+    const bookData = searchParams?.get('bookData');
+    if (bookData) {
+      try {
+        setBook(JSON.parse(bookData));
+      } catch (error) {
+        console.error('Invalid bookData format:', error);
+      }
+    }
+  }, [searchParams]);
+
+  // Render a loading state if book data is not ready
+  if (!book) {
     return <p className="text-center text-gray-600">טוען נתונים...</p>;
   }
-
-  const book = JSON.parse(bookData);
 
   const nextImage = () => {
     setCurrentImageIndex((prevIndex) => (prevIndex + 1) % book.images.length);

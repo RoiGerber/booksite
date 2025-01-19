@@ -8,6 +8,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Headphones, ShoppingCart, ChevronDown,ChevronRight,ChevronLeft } from 'lucide-react'
 import PDFViewer from "@/components/PDFViewer"; // Import your PDFViewer component
 import books from './booksData'; // Import the books data
+import { Spinner } from "@/components/ui/spinner"; // Replace with your spinner if needed
+
 
 
 function BookPage({ book, onBack, onAddToCart }) {
@@ -147,110 +149,120 @@ function BookPage({ book, onBack, onAddToCart }) {
   );
 }
 
+
 function PurchasePage({ cart, onBack, onPurchase, onUpdateCart }) {
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
     address: "",
-    email: "", // שדה חדש למייל
+    email: "",
   });
 
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false); // Loading state
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.name.trim()) newErrors.name = 'שם הוא שדה חובה';
-    if (!formData.phone.trim()) newErrors.phone = 'טלפון הוא שדה חובה';
-    if (!formData.address.trim()) newErrors.address = 'כתובת היא שדה חובה';
-    if (!formData.email.trim()) newErrors.email = 'כתובת דואר אלקטרוני הוא שדה חובה';
-    
+    if (!formData.name.trim()) newErrors.name = "שם הוא שדה חובה";
+    if (!formData.phone.trim()) newErrors.phone = "טלפון הוא שדה חובה";
+    if (!formData.address.trim()) newErrors.address = "כתובת היא שדה חובה";
+    if (!formData.email.trim()) newErrors.email = "כתובת דואר אלקטרוני הוא שדה חובה";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       alert("אנא מלא את כל השדות הנדרשים בטופס.");
       return;
     }
-    
-    const orderSummary = cart
-      .map((item) => `${item.title} (כמות: ${item.quantity}, ₪${item.price * item.quantity})`)
-      .join(", ");
-    
+
+    const totalPrice = cart.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+
     const payload = {
       name: formData.name,
       phone: formData.phone,
       address: formData.address,
       email: formData.email,
       total: totalPrice,
-      order: orderSummary,
+      order: cart
+        .map(
+          (item) =>
+            `${item.title} (כמות: ${item.quantity}, ₪${
+              item.price * item.quantity
+            })`
+        )
+        .join(", "),
     };
-    
-    try {
 
-  
-      // Then send the actual POST request
+    setLoading(true); // Start loading spinner
+    try {
       const response = await fetch(
         "https://script.google.com/macros/s/AKfycbxCxJH-Ie2UOzuilq1y2VPvYlmggNH1QAhx776YuNtQmlQa-WH_74o6_KUS8_ysT-Za/exec",
         {
           method: "POST",
           mode: "no-cors",
           headers: {
-            "Accept": "application/json",
+            Accept: "application/json",
             "Content-Type": "application/json",
           },
           body: JSON.stringify(payload),
         }
       );
-  
-      // With mode: "no-cors", we can't read the response
-      // So we'll assume success if we got here without an error
-      console.log("Request completed" + response);
-      alert("ההזמנה נשלחה בהצלחה!");
+
+    
       onPurchase(formData);
-      
     } catch (error) {
       console.error("Error:", error);
       alert("שגיאה בחיבור לשרת. אנא נסה שוב.");
+    } finally {
+      setLoading(false); // Stop loading spinner
     }
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
     if (errors[name]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [name]: ''
+        [name]: "",
       }));
     }
   };
-
-  // Calculate total price
-  const totalPrice = cart?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0;
 
   const handleRemoveItem = (index) => {
     const updatedCart = cart.filter((_, i) => i !== index);
     onUpdateCart(updatedCart);
   };
 
+  const totalPrice = cart.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-12 relative">
+      {/* Loading Overlay */}
+      {loading && (
+        <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center z-50">
+          <Spinner />
+        </div>
+      )}
+
+      {/* Page Content */}
       <div className="container mx-auto px-4">
-        <Button 
-          onClick={onBack} 
-          className="mb-8"
-          variant="outline"
-        >
+        <Button onClick={onBack} className="mb-8" variant="outline">
           המשך לקנות
         </Button>
-
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -258,106 +270,143 @@ function PurchasePage({ cart, onBack, onPurchase, onUpdateCart }) {
           className="grid md:grid-cols-2 gap-12"
         >
           {/* Order Summary */}
-          <Card className="h-fit">
-            <CardContent className="pt-6">
-              <h2 className="text-2xl font-bold text-indigo-900 mb-4 text-right">סיכום הזמנה</h2>
-              <div className="space-y-4">
-                {cart?.map((item, index) => (
-                  <div key={index} className="flex justify-between items-center text-right">
-                    <div>
-                      <p className="font-semibold">{item.title}</p>
-                      <p className="text-sm text-gray-500">כמות: {item.quantity}</p>
-                      <button
-                        onClick={() => handleRemoveItem(index)}
-                        className="text-red-500 text-sm mt-2"
-                      >
-                        הסר פריט
-                      </button>
-                    </div>
-                    <span className="text-gray-600">₪{item.price * item.quantity}</span>
+          <div>
+            <h2 className="text-2xl font-bold text-indigo-900 mb-4 text-right">
+              סיכום הזמנה
+            </h2>
+            <div className="space-y-4">
+              {cart.map((item, index) => (
+                <div
+                  key={index}
+                  className="flex justify-between items-center text-right"
+                >
+                  <div>
+                    <p className="font-semibold">{item.title}</p>
+                    <p className="text-sm text-gray-500">
+                      כמות: {item.quantity}
+                    </p>
+                    <button
+                      onClick={() => handleRemoveItem(index)}
+                      className="text-red-500 text-sm mt-2"
+                    >
+                      הסר פריט
+                    </button>
                   </div>
-                ))}
-                <div className="border-t pt-4 mt-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xl font-bold">₪{totalPrice}</span>
-                    <span className="text-xl font-bold">סה"כ לתשלום</span>
-                  </div>
+                  <span className="text-gray-600">
+                    ₪{item.price * item.quantity}
+                  </span>
+                </div>
+              ))}
+              <div className="border-t pt-4 mt-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-xl font-bold">₪{totalPrice}</span>
+                  <span className="text-xl font-bold">סה"כ לתשלום</span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Purchase Form */}
           <div>
-            <h1 className="text-3xl font-bold text-indigo-900 mb-6 text-right">פרטי משלוח</h1>
+            <h1 className="text-3xl font-bold text-indigo-900 mb-6 text-right">
+              פרטי משלוח
+            </h1>
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Name Field */}
               <div>
-                <label className="block text-right mb-2 text-indigo-900">שם מלא</label>
+                <label className="block text-right mb-2 text-indigo-900">
+                  שם מלא
+                </label>
                 <input
                   type="text"
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
                   className={`w-full p-3 border rounded-md text-right ${
-                    errors.name ? 'border-red-500' : 'border-gray-300'
+                    errors.name ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="הכנס את שמך המלא"
                 />
-                {errors.name && <p className="text-red-500 text-sm mt-1 text-right">{errors.name}</p>}
+                {errors.name && (
+                  <p className="text-red-500 text-sm mt-1 text-right">
+                    {errors.name}
+                  </p>
+                )}
               </div>
 
+              {/* Phone Field */}
               <div>
-                <label className="block text-right mb-2 text-indigo-900">טלפון</label>
+                <label className="block text-right mb-2 text-indigo-900">
+                  טלפון
+                </label>
                 <input
                   type="tel"
                   name="phone"
                   value={formData.phone}
                   onChange={handleInputChange}
                   className={`w-full p-3 border rounded-md text-right ${
-                    errors.phone ? 'border-red-500' : 'border-gray-300'
+                    errors.phone ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="הכנס את מספר הטלפון שלך"
                 />
-                {errors.phone && <p className="text-red-500 text-sm mt-1 text-right">{errors.phone}</p>}
+                {errors.phone && (
+                  <p className="text-red-500 text-sm mt-1 text-right">
+                    {errors.phone}
+                  </p>
+                )}
               </div>
 
+              {/* Address Field */}
               <div>
-                <label className="block text-right mb-2 text-indigo-900">כתובת</label>
+                <label className="block text-right mb-2 text-indigo-900">
+                  כתובת
+                </label>
                 <textarea
                   name="address"
                   value={formData.address}
                   onChange={handleInputChange}
                   className={`w-full p-3 border rounded-md text-right ${
-                    errors.address ? 'border-red-500' : 'border-gray-300'
+                    errors.address ? "border-red-500" : "border-gray-300"
                   }`}
                   rows="3"
                   placeholder="הכנס את כתובת המשלוח המלאה"
                 />
-                {errors.address && <p className="text-red-500 text-sm mt-1 text-right">{errors.address}</p>}
+                {errors.address && (
+                  <p className="text-red-500 text-sm mt-1 text-right">
+                    {errors.address}
+                  </p>
+                )}
               </div>
 
+              {/* Email Field */}
               <div>
-                <label className="block text-right mb-2 text-indigo-900">כתובת דואר אלקטרוני</label>
+                <label className="block text-right mb-2 text-indigo-900">
+                  כתובת דואר אלקטרוני
+                </label>
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
                   className={`w-full p-3 border rounded-md text-right ${
-                    errors.email ? 'border-red-500' : 'border-gray-300'
+                    errors.email ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="הכנס את כתובת הדואר האלקטרוני שלך"
-                  required
                 />
-                {errors.email && <p className="text-red-500 text-sm mt-1 text-right">{errors.email}</p>}
+                {errors.email && (
+                  <p className="text-red-500 text-sm mt-1 text-right">
+                    {errors.email}
+                  </p>
+                )}
               </div>
 
-              <Button 
+              {/* Submit Button */}
+              <Button
                 type="submit"
                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-lg py-6"
+                disabled={loading}
               >
-                <ShoppingCart className="ml-2 h-5 w-5" />
-                סיים רכישה - ₪{totalPrice}
+                {loading ? "טוען..." : `סיים רכישה - ₪${totalPrice}`}
               </Button>
             </form>
           </div>
@@ -367,22 +416,31 @@ function PurchasePage({ cart, onBack, onPurchase, onUpdateCart }) {
   );
 }
 
-
 export default function Home() {
   const [selectedBook, setSelectedBook] = useState(null);
   const [cart, setCart] = useState([]);
   const [showPurchase, setShowPurchase] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   const handlePurchase = (formData) => {
-    console.log('Purchase data:', { cart, formData });
+    console.log("Purchase data:", { cart, formData });
     setCart([]);
     setShowPurchase(false);
+    setShowConfirmation(true); // Show the confirmation page
   };
 
   const handleAddToCart = (book, quantity) => {
     setCart((prevCart) => [...prevCart, { ...book, quantity }]);
     setShowPurchase(true);
   };
+
+  if (showConfirmation) {
+    return (
+      <OrderConfirmation 
+        onReturnHome={() => setShowConfirmation(false)} 
+      />
+    );
+  }
 
   if (showPurchase) {
     return (
@@ -416,6 +474,8 @@ export default function Home() {
     </main>
   );
 }
+
+
 
 function BooksShowcase({ onBookSelect }) {
   return (
@@ -570,6 +630,38 @@ function PodcastsSection() {
     </section>
   );
 }
+
+function OrderConfirmation({ onReturnHome }) {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-12 flex flex-col justify-center items-center text-center">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className="max-w-lg bg-white rounded-lg shadow-lg p-8"
+      >
+        <h1 className="text-4xl font-bold text-indigo-900 mb-4">תודה על ההזמנה שלך!</h1>
+        <p className="text-xl text-indigo-700 mb-6">
+          ההזמנה שלך התקבלה בהצלחה. הסופר ייצור איתך קשר לתשלום ואישור פרטי ההזמנה.
+        </p>
+        <Image
+          src="/pictures/order-success.png"
+          alt="Order Success"
+          width={150}
+          height={150}
+          className="mx-auto mb-8"
+        />
+        <Button 
+          onClick={onReturnHome} 
+          className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 text-lg"
+        >
+          חזור לדף הראשי
+        </Button>
+      </motion.div>
+    </div>
+  );
+}
+
 
 function RecommendationsSection() {
   const recommendations = [

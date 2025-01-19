@@ -208,7 +208,7 @@ function PurchasePage({ cart, onBack, onPurchase, onUpdateCart }) {
   
       // With mode: "no-cors", we can't read the response
       // So we'll assume success if we got here without an error
-      console.log("Request completed");
+      console.log("Request completed" + response);
       alert("ההזמנה נשלחה בהצלחה!");
       onPurchase(formData);
       

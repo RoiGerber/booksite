@@ -9,12 +9,10 @@ import { Headphones, ShoppingCart, ChevronDown,ChevronRight,ChevronLeft } from '
 import PDFViewer from "@/components/PDFViewer"; // Import your PDFViewer component
 
 
-
-function BookPage({ book, onBack }) {
+function BookPage({ book, onBack, onAddToCart }) {
   const [quantity, setQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  // Create an images array that always includes at least the cover image
   const bookImages = book.images || [book.cover];
 
   const prevImage = () => {
@@ -46,7 +44,7 @@ function BookPage({ book, onBack }) {
           transition={{ duration: 0.5 }}
           className="grid md:grid-cols-2 gap-12 text-right"
         >
-          {/* Book Image with Navigation */}
+          {/* Book Image */}
           <div className="relative">
             <div className="relative h-[600px] w-full">
               <Image
@@ -118,7 +116,12 @@ function BookPage({ book, onBack }) {
                 
               </div>
               ⠀⠀⠀⠀  
-              <Button className="flex-1 bg-indigo-600 hover:bg-indigo-700 ">
+              <Button
+                onClick={() => {
+                  onAddToCart(quantity);
+                }}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700"
+              >
                 <ShoppingCart className="mr-2 h-5 w-5 justify-start" /> הוסף לסל הקניות
               </Button>
             </div>
@@ -143,12 +146,217 @@ function BookPage({ book, onBack }) {
   );
 }
 
-// Modify your main page component
+function PurchasePage({ cart, onBack, onPurchase, onUpdateCart }) {
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    address: '',
+    mail: '',
+  });
+
+  const [errors, setErrors] = useState({});
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.name.trim()) newErrors.name = 'שם הוא שדה חובה';
+    if (!formData.phone.trim()) newErrors.phone = 'טלפון הוא שדה חובה';
+    if (!formData.address.trim()) newErrors.address = 'כתובת היא שדה חובה';
+    if (!formData.mail.trim()) newErrors.mail = 'כתובת דואר אלקטרוני הוא שדה חובה';
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (validateForm()) {
+      onPurchase(formData);
+    }
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+
+  // Calculate total price
+  const totalPrice = cart?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0;
+
+  const handleRemoveItem = (index) => {
+    const updatedCart = cart.filter((_, i) => i !== index);
+    onUpdateCart(updatedCart);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-12">
+      <div className="container mx-auto px-4">
+        <Button 
+          onClick={onBack} 
+          className="mb-8"
+          variant="outline"
+        >
+          המשך לקנות
+        </Button>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="grid md:grid-cols-2 gap-12"
+        >
+          {/* Order Summary */}
+          <Card className="h-fit">
+            <CardContent className="pt-6">
+              <h2 className="text-2xl font-bold text-indigo-900 mb-4 text-right">סיכום הזמנה</h2>
+              <div className="space-y-4">
+                {cart?.map((item, index) => (
+                  <div key={index} className="flex justify-between items-center text-right">
+                    <div>
+                      <p className="font-semibold">{item.title}</p>
+                      <p className="text-sm text-gray-500">כמות: {item.quantity}</p>
+                      <button
+                        onClick={() => handleRemoveItem(index)}
+                        className="text-red-500 text-sm mt-2"
+                      >
+                        הסר פריט
+                      </button>
+                    </div>
+                    <span className="text-gray-600">₪{item.price * item.quantity}</span>
+                  </div>
+                ))}
+                <div className="border-t pt-4 mt-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xl font-bold">₪{totalPrice}</span>
+                    <span className="text-xl font-bold">סה"כ לתשלום</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Purchase Form */}
+          <div>
+            <h1 className="text-3xl font-bold text-indigo-900 mb-6 text-right">פרטי משלוח</h1>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label className="block text-right mb-2 text-indigo-900">שם מלא</label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  className={`w-full p-3 border rounded-md text-right ${
+                    errors.name ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="הכנס את שמך המלא"
+                />
+                {errors.name && <p className="text-red-500 text-sm mt-1 text-right">{errors.name}</p>}
+              </div>
+
+              <div>
+                <label className="block text-right mb-2 text-indigo-900">טלפון</label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  className={`w-full p-3 border rounded-md text-right ${
+                    errors.phone ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="הכנס את מספר הטלפון שלך"
+                />
+                {errors.phone && <p className="text-red-500 text-sm mt-1 text-right">{errors.phone}</p>}
+              </div>
+
+              <div>
+                <label className="block text-right mb-2 text-indigo-900">כתובת</label>
+                <textarea
+                  name="address"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                  className={`w-full p-3 border rounded-md text-right ${
+                    errors.address ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  rows="3"
+                  placeholder="הכנס את כתובת המשלוח המלאה"
+                />
+                {errors.address && <p className="text-red-500 text-sm mt-1 text-right">{errors.address}</p>}
+              </div>
+
+              <div>
+                <label className="block text-right mb-2 text-indigo-900">כתובת דואר אלקטרוני</label>
+                <input
+                  type="email"
+                  name="mail"
+                  value={formData.mail}
+                  onChange={handleInputChange}
+                  className={`w-full p-3 border rounded-md text-right ${
+                    errors.mail ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="הכנס את כתובת הדואר האלקטרוני שלך"
+                  required
+                />
+                {errors.mail && <p className="text-red-500 text-sm mt-1 text-right">{errors.mail}</p>}
+              </div>
+
+              <Button 
+                type="submit"
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-lg py-6"
+              >
+                <ShoppingCart className="ml-2 h-5 w-5" />
+                סיים רכישה - ₪{totalPrice}
+              </Button>
+            </form>
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [selectedBook, setSelectedBook] = useState(null);
+  const [cart, setCart] = useState([]);
+  const [showPurchase, setShowPurchase] = useState(false);
+
+  const handlePurchase = (formData) => {
+    console.log('Purchase data:', { cart, formData });
+    setCart([]);
+    setShowPurchase(false);
+  };
+
+  if (showPurchase) {
+    return (
+      <PurchasePage 
+        cart={cart} 
+        onBack={() => setShowPurchase(false)}
+        onPurchase={handlePurchase}
+        onUpdateCart={setCart} // Pass cart updater function
+      />
+    );
+  }
+  
 
   if (selectedBook) {
-    return <BookPage book={selectedBook} onBack={() => setSelectedBook(null)} />;
+    return (
+      <BookPage 
+        book={selectedBook} 
+        onBack={() => setSelectedBook(null)}
+        onAddToCart={(quantity) => {
+          setCart(prev => [...prev, { ...selectedBook, quantity }]);
+          setShowPurchase(true);
+        }}
+      />
+    );
   }
 
   return (
@@ -158,12 +366,15 @@ export default function Home() {
       <PodcastsSection />
       <RecommendationsSection />
       <ExampleChaptersSection />
+      {/* {cart.length > 0 && (
+        // Remove the "סיים רכישה" button
+      )} */}
       <PurchaseSection />
     </main>
   );
 }
 
-// Modify your BooksShowcase component
+
 function BooksShowcase({ onBookSelect }) {
   const books = [
     {
@@ -238,7 +449,6 @@ function BooksShowcase({ onBookSelect }) {
   );
 }
 
-
 function HeroSection() {
   return (
     <section className="h-screen flex flex-col justify-center items-center text-center relative overflow-hidden">
@@ -269,8 +479,6 @@ function HeroSection() {
     </section>
   )
 }
-
-
 
 function PodcastsSection() {
   // Track the currently active podcast (or null if none is active)
@@ -357,7 +565,6 @@ function PodcastsSection() {
     </section>
   );
 }
-
 
 function RecommendationsSection() {
   const recommendations = [

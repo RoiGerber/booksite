@@ -324,6 +324,7 @@ function PurchasePage({ cart, onBack, onPurchase, onUpdateCart }) {
   );
 }
 
+
 export default function Home() {
   const [selectedBook, setSelectedBook] = useState(null);
   const [cart, setCart] = useState([]);
@@ -335,27 +336,28 @@ export default function Home() {
     setShowPurchase(false);
   };
 
+  const handleAddToCart = (book, quantity) => {
+    setCart((prevCart) => [...prevCart, { ...book, quantity }]);
+    setShowPurchase(true);
+  };
+
   if (showPurchase) {
     return (
-      <PurchasePage 
-        cart={cart} 
+      <PurchasePage
+        cart={cart}
         onBack={() => setShowPurchase(false)}
         onPurchase={handlePurchase}
-        onUpdateCart={setCart} // Pass cart updater function
+        onUpdateCart={setCart}
       />
     );
   }
-  
 
   if (selectedBook) {
     return (
-      <BookPage 
-        book={selectedBook} 
+      <BookPage
+        book={selectedBook}
         onBack={() => setSelectedBook(null)}
-        onAddToCart={(quantity) => {
-          setCart(prev => [...prev, { ...selectedBook, quantity }]);
-          setShowPurchase(true);
-        }}
+        onAddToCart={(quantity) => handleAddToCart(selectedBook, quantity)}
       />
     );
   }
@@ -367,14 +369,10 @@ export default function Home() {
       <PodcastsSection />
       <RecommendationsSection />
       <ExampleChaptersSection />
-      {/* {cart.length > 0 && (
-        // Remove the "סיים רכישה" button
-      )} */}
-      <PurchaseSection onBookSelect={setSelectedBook}/>
+      <PurchaseSection onBookSelect={setSelectedBook} />
     </main>
   );
 }
-
 
 function BooksShowcase({ onBookSelect }) {
   return (

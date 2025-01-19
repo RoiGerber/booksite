@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight, Star, ShoppingCart, Heart } from 'lucide-react'
@@ -10,14 +10,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useSearchParams } from 'next/navigation'
 
 export default function BookProductPage() {
+  return (
+    <Suspense fallback={<p className="text-center text-gray-600">טוען נתונים...</p>}>
+      <BookContent />
+    </Suspense>
+  );
+}
+
+function BookContent() {
   const searchParams = useSearchParams(); // Use the hook to get query params
+  const bookData = searchParams.get('bookData'); // Extract the bookData parameter
+
   const [book, setBook] = useState(null); // Initialize state for book data
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
 
   // UseEffect to parse bookData only once
   useEffect(() => {
-    const bookData = searchParams?.get('bookData');
     if (bookData) {
       try {
         setBook(JSON.parse(bookData));
@@ -25,7 +34,7 @@ export default function BookProductPage() {
         console.error('Invalid bookData format:', error);
       }
     }
-  }, [searchParams]);
+  }, [bookData]);
 
   // Render a loading state if book data is not ready
   if (!book) {

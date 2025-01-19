@@ -15,7 +15,7 @@ const books = [
       language: "עברית",
       publisher: "הוצאה עצמית",
       publicationDate: "ינואר 2025",
-      isbn: "978-1234567890",
+      isbn: "978-38414352",
     }
   },
   {
@@ -34,7 +34,7 @@ const books = [
       language: "עברית",
       publisher: "הוצאה עצמית",
       publicationDate: "פברואר 2020",
-      isbn: "978-9876543210",
+      isbn: "978-13501156",
     }
   },
   {
@@ -48,14 +48,14 @@ const books = [
             "/pictures/tnu_front.jpg",
 
     ],
-    author: "Unknown Author",
-    description: "Description of the book...",
+    author: "רועי בנימין גרבר",
+    description: "למה לבחור בין מתמטיקה להיסטוריה אם אפשר גם וגם? מארז טובים השניים יעשיר את הידע שלך, יגרום לך לצחוק ולחייך ויחסוך 29 שקל",
     details: {
-      pages: 200,
+      pages: 500,
       language: "עברית",
-      publisher: "Unknown Publisher",
-      publicationDate: "Unknown Date",
-      isbn: "Unknown ISBN",
+      publisher: "רועי בנימין גרבר",
+      publicationDate: "2020,2025",
+      isbn: "978-15374986",
     },
   },
 ];

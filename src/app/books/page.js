@@ -7,20 +7,20 @@ import { ChevronLeft, ChevronRight, Star, ShoppingCart, Heart } from 'lucide-rea
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-
-
+import { useSearchParams } from 'next/navigation'
 
 export default function BookProductPage() {
   const searchParams = useSearchParams(); // Use the hook to get query params
-  const bookData = searchParams.get('bookData'); // Extract the bookData parameter
+  const bookData = searchParams?.get('bookData'); // Extract the bookData parameter
+
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [quantity, setQuantity] = useState(1);
 
   if (!bookData) {
     return <p className="text-center text-gray-600">טוען נתונים...</p>;
   }
 
   const book = JSON.parse(bookData);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [quantity, setQuantity] = useState(1);
 
   const nextImage = () => {
     setCurrentImageIndex((prevIndex) => (prevIndex + 1) % book.images.length);

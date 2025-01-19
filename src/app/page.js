@@ -215,6 +215,7 @@ function PurchasePage({ cart, onBack, onPurchase, onUpdateCart }) {
         }
       );
 
+      console.log(response)
     
       onPurchase(formData);
     } catch (error) {

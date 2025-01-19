@@ -15,6 +15,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="he" dir="rtl">
+                
+
       <body className={`${heebo.className} bg-gradient-to-br from-indigo-50 via-white to-purple-50 text-gray-800`}>
         {children}
       </body>

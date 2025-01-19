@@ -5,21 +5,240 @@ import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Headphones, ShoppingCart, ChevronDown } from 'lucide-react'
+import { Headphones, ShoppingCart, ChevronDown,ChevronRight,ChevronLeft } from 'lucide-react'
 import PDFViewer from "@/components/PDFViewer"; // Import your PDFViewer component
+import Link from 'next/link';
 
+
+
+function BookPage({ book, onBack }) {
+  const [quantity, setQuantity] = useState(1);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Create an images array that always includes at least the cover image
+  const bookImages = book.images || [book.cover];
+
+  const prevImage = () => {
+    setCurrentImageIndex((prevIndex) => 
+      (prevIndex + 1) % bookImages.length
+    );
+  };
+
+  const nextImage = () => {
+    setCurrentImageIndex((prevIndex) => 
+      (prevIndex - 1 + bookImages.length) % bookImages.length
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-12">
+      <div className="container mx-auto px-4">
+        <Button 
+          onClick={onBack} 
+          className="mb-8"
+          variant="outline"
+        >
+          חזור לדף הראשי
+        </Button>
+        
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="grid md:grid-cols-2 gap-12 text-right"
+        >
+          {/* Book Image with Navigation */}
+          <div className="relative">
+            <div className="relative h-[600px] w-full">
+              <Image
+                src={bookImages[currentImageIndex]}
+                alt={`${book.title} - תמונה ${currentImageIndex + 1}`}
+                fill
+                style={{ objectFit: 'contain' }}
+                className="rounded-lg shadow-lg"
+              />
+              {bookImages.length > 1 && (
+                <>
+                  <button 
+                    onClick={prevImage} 
+                    className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition-colors"
+                  >
+                    <ChevronLeft className="w-6 h-6 text-indigo-600" />
+                  </button>
+                  <button 
+                    onClick={nextImage} 
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white p-2 rounded-full shadow-md hover:bg-gray-100 transition-colors"
+                  >
+                    <ChevronRight className="w-6 h-6 text-indigo-600" />
+                  </button>
+                </>
+              )}
+            </div>
+            
+            {/* Thumbnail Navigation */}
+            {bookImages.length > 1 && (
+              <div className="flex justify-center mt-4 gap-2">
+                {bookImages.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentImageIndex(index)}
+                    className={`w-3 h-3 rounded-full transition-colors ${
+                      currentImageIndex === index 
+                        ? 'bg-indigo-600' 
+                        : 'bg-gray-300 hover:bg-indigo-400'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Book Details */}
+          <div>
+            <h1 className="text-4xl font-bold text-indigo-900 mb-2">{book.title}</h1>
+            <p className="text-xl text-indigo-700 mb-4">מאת {book.author}</p>
+            <p className="text-3xl font-bold text-indigo-900 mb-6">₪{book.price}</p>
+            <p className="text-gray-700 mb-6">{book.description}</p>
+            
+            {/* Add to Cart Section */}
+            <div className="flex items-center space-x-4 mb-8 justify-end">
+              <div className="flex items-center border rounded-md">
+                <button 
+                  onClick={() => setQuantity(q => Math.max(1, q - 1))} 
+                  className="px-3 py-1 text-indigo-600"
+                >
+                  -
+                </button>
+                <span className="px-3 py-1 border-x ">{quantity}</span>
+                <button 
+                  onClick={() => setQuantity(q => q + 1)} 
+                  className="px-3 py-1 text-indigo-600"
+                >
+                  +
+                </button>
+                
+              </div>
+              ⠀⠀⠀⠀  
+              <Button className="flex-1 bg-indigo-600 hover:bg-indigo-700 ">
+                <ShoppingCart className="mr-2 h-5 w-5 justify-start" /> הוסף לסל הקניות
+              </Button>
+            </div>
+
+            {/* Additional Details */}
+            <Card>
+              <CardContent className="pt-6">
+                <h3 className="text-xl font-semibold mb-4">פרטי הספר</h3>
+                <ul className="space-y-2">
+                  <li><strong>מספר עמודים:</strong> {book.details.pages}</li>
+                  <li><strong>שפה:</strong> {book.details.language}</li>
+                  <li><strong>הוצאה לאור:</strong> {book.details.publisher}</li>
+                  <li><strong>תאריך הוצאה:</strong> {book.details.publicationDate}</li>
+                  <li><strong>ISBN:</strong> {book.details.isbn}</li>
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+// Modify your main page component
 export default function Home() {
+  const [selectedBook, setSelectedBook] = useState(null);
+
+  if (selectedBook) {
+    return <BookPage book={selectedBook} onBack={() => setSelectedBook(null)} />;
+  }
+
   return (
     <main className="min-h-screen">
       <HeroSection />
-      <BooksShowcase />
+      <BooksShowcase onBookSelect={setSelectedBook} />
       <PodcastsSection />
       <RecommendationsSection />
       <ExampleChaptersSection />
       <PurchaseSection />
     </main>
-  )
+  );
 }
+
+// Modify your BooksShowcase component
+function BooksShowcase({ onBookSelect }) {
+  const books = [
+    {
+      title: "תנו למספרים לדבר",
+      cover: "/pictures/let_the_number_talk_camera.jpg",
+      images: [
+        "/pictures/let_the_number_talk_camera.jpg",
+        "/pictures/tnu_front.jpg",
+        "/pictures/tnu_back.jpg",
+        // Add more image paths when you have them
+      ],
+      author: "רועי בנימין גרבר",
+      price: 89,
+      description: "מתמטיקה זה יותר ממספרים. הרבה יותר. מתמטיקה היא השפה של היקום כולו. היא שוברת את גבולות ההיגיון ובכל זאת מצליחה לתאר את היקום בדיוק של ייאמן. למה? איך? הצטרפו לגדולי המתמטיקאים והפילוסופים של כל הזמנים כדי לצאת יותר סקרנים משנכנסתם. הנאה מובטחת!",
+      details: {
+        pages: 146,
+        language: "עברית",
+        publisher: "הוצאה עצמית",
+        publicationDate: "ינואר 2025",
+        isbn: "978-1234567890",
+      }
+    },
+    {
+      title: "עשרה פרקים על",
+      cover: "/pictures/ten_episodes_on_camera.jpg",
+      images: [
+        "/pictures/ten_episodes_on_camera.jpg",
+        "/pictures/asara_front.jpg",
+        "/pictures/asara_back.jpg",
+        // Add more image paths when you have them
+      ],
+      author: "רועי בנימין גרבר",
+      price: 79,
+      description: "עשרה פרקים על הוא ספר בלתי שגרתי בעליל. הוא מספר את כל מה שצריך לדעת על 500 השנים הכי מעניינות (האחרונות) בצורה של סיפור, בלשון קלה, הומוריסטית ומרתקת. הספר מתאים לכל הגילאים ונמכר ביותר מ1000 עותקים. הצטרפו לקולומבוס, נפוליאון, הרצל, רייגן ועוד! בואו תעשו היסטוריה.",
+      details: {
+        pages: 350,
+        language: "עברית",
+        publisher: "הוצאה עצמית",
+        publicationDate: "פברואר 2020",
+        isbn: "978-9876543210",
+      }
+    },
+  ];
+
+  return (
+    <section className="py-20 bg-white">
+      <div className="container mx-auto px-4">
+        <h2 className="text-4xl font-bold text-center mb-16 text-indigo-900">הספרים שלי</h2>
+        <div className="flex flex-wrap justify-center gap-16">
+          {books.map((book, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: index * 0.2 }}
+              className="text-center cursor-pointer"
+              onClick={() => onBookSelect(book)}
+            >
+              <Image
+                src={book.cover}
+                alt={book.title}
+                width={300}
+                height={400}
+                className="rounded-lg shadow-lg mb-6 transition-transform duration-300 hover:scale-105"
+              />
+              <h3 className="text-2xl font-semibold text-indigo-800">{book.title}</h3>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 
 function HeroSection() {
   return (
@@ -39,7 +258,7 @@ function HeroSection() {
         />
         <h1 className="text-5xl font-bold mb-4 text-indigo-900">רועי בנימין גרבר</h1>
         <p className="text-xl text-indigo-700 max-w-2xl mx-auto mb-8">סופר, מתמטיקאי והיסטוריון חובב, בוגר תואר ראשון במדעי המחשב. רועי מפתח תוכנה באמזון.</p>
-        <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-white">לרכישה</Button>
+        <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-white mb-16">לרכישה</Button>
       </motion.div>
       <motion.div
         animate={{ y: [0, 10, 0] }}
@@ -52,39 +271,12 @@ function HeroSection() {
   )
 }
 
-function BooksShowcase() {
-  const books = [
-    { title: "תנו למספרים לדבר", cover: "/pictures/let_the_number_talk_camera.jpg" },
-    { title: "עשרה פרקים על", cover: "/pictures/ten_episodes_on_camera.jpg" },
-  ]
 
-  return (
-    <section className="py-20 bg-white">
-      <div className="container mx-auto px-4">
-        <h2 className="text-4xl font-bold text-center mb-16 text-indigo-900">הספרים שלי</h2>
-        <div className="flex flex-wrap justify-center gap-16">
-          {books.map((book, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.2 }}
-              className="text-center"
-            >
-              <Image src={book.cover || "/placeholder.svg"} alt={book.title} width={300} height={400} className="rounded-lg shadow-2xl mb-6 transition-transform duration-300 hover:scale-105" />
-              <h3 className="text-2xl font-semibold text-indigo-800">{book.title}</h3>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  )
-}
 
 function PodcastsSection() {
   // Track the currently active podcast (or null if none is active)
-  const [activePodcast, setActivePodcast] = useState<number | null>(null);
-
+  // const [activePodcast, setActivePodcast] = useState<number | null>(null);
+  const [activePodcast, setActivePodcast] = useState(null);
   const podcasts = [
     { 
       title: "ראיון בתכנית הבוקר פותחים יום בערוץ 13", 
@@ -103,7 +295,7 @@ function PodcastsSection() {
     },
   ];
 
-  const togglePodcast = (index: number) => {
+  const togglePodcast = (index) => {
     setActivePodcast(activePodcast === index ? null : index); // Toggle the active podcast
   };
 

@@ -8,27 +8,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-// This would typically come from a database or API
-const bookData = {
-  title: "מסע אל תוך הלב",
-  author: "שם הסופר",
-  price: 79,
-  rating: 4.5,
-  description: "ספר מרתק המוביל את הקורא למסע רגשי ומעמיק אל תוך נבכי הנפש האנושית. דרך סיפורים מרגשים ותובנות עמוקות, הספר מציע דרך חדשה להתבונן על החיים ועל עצמנו.",
-  longDescription: "בספר זה, המחבר לוקח אותנו למסע מרתק ומעמיק אל תוך הלב האנושי. דרך סדרה של סיפורים אישיים, מחקרים פסיכולוגיים, ותרגילים מעשיים, הקורא מוזמן לחקור את הרגשות, המחשבות, והתשוקות שמניעות אותנו. הספר מציע תובנות עמוקות על אהבה, פחד, שמחה, וכאב, ומראה כיצד כל אלה מעצבים את חיינו ואת יחסינו עם אחרים. עם כתיבה רגישה ומלאת חמלה, המחבר מוביל אותנו בנתיב של גילוי עצמי, צמיחה אישית, והבנה עמוקה יותר של הטבע האנושי. זהו ספר שישנה את הדרך בה אתם מסתכלים על עצמכם ועל העולם סביבכם.",
-  details: {
-    pages: 320,
-    language: "עברית",
-    publisher: "הוצאת אור",
-    publicationDate: "ינואר 2023",
-    isbn: "978-1234567890",
-  },
-  images: [
-    "/placeholder.svg?height=600&width=400",
-    "/placeholder.svg?height=600&width=400&text=Image+2",
-    "/placeholder.svg?height=600&width=400&text=Image+3",
-  ]
-}
 
 
 export default function BookProductPage() {

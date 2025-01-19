@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Headphones, ShoppingCart, ChevronDown,ChevronRight,ChevronLeft } from 'lucide-react'
 import PDFViewer from "@/components/PDFViewer"; // Import your PDFViewer component
-import Link from 'next/link';
 
 
 

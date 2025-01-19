@@ -476,8 +476,6 @@ export default function Home() {
   );
 }
 
-
-
 function BooksShowcase({ onBookSelect }) {
   return (
     <section className="py-20 bg-white">
@@ -663,7 +661,6 @@ function OrderConfirmation({ onReturnHome }) {
   );
 }
 
-
 function RecommendationsSection() {
   const recommendations = [
     { text: "ספר מרתק שלא יכולתי להניח מהיד!", author: "קורא נלהב" },
@@ -696,7 +693,6 @@ function RecommendationsSection() {
     </section>
   )
 }
-
 function ExampleChaptersSection() {
   const [activeChapter, setActiveChapter] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -709,7 +705,7 @@ function ExampleChaptersSection() {
     },
     {
       title: "תנו למספרים לדבר - מלכת המדעים",
-      content: "מה כל כך מיוחד במתמטיקה? במה היא שונה מהפיזיקה, מהביולוגיה, מהמוזיקה, מהאסטרונומיה, או מהפסיכולוגיה? הדעות כמובן מגוונות, ואין תשובה אחת נכונה – פילוסופיה זה לא מדע מדויק, בניגוד למתמטיקה שהיא בדיוק כן. ואולי פה קבור הכלב.",
+      content: "מה כל כך מיוחד במתמטיקה? במה היא שונה מהפיזיקה, מהביולוגיה, מהמוזיקה, מהאסטרונומיה, או מהפסיכולוגיה? הדעות כמובן מגוונות, ואין תשובה אחת נכונה - פילוסופיה זה לא מדע מדויק, בניגוד למתמטיקה שהיא בדיוק כן. ואולי פה קבור הכלב.",
       pdfUrl: "/pdfs/scienceQueen.pdf",
     },
   ];
@@ -721,30 +717,31 @@ function ExampleChaptersSection() {
           פרקים לדוגמה
         </h2>
         <div className="max-w-4xl mx-auto">
-          <div className="flex mb-8">
+          {/* Responsive Button Layout */}
+          <div className="flex flex-col sm:flex-row mb-8 space-y-4 sm:space-y-0 sm:space-x-4">
             {chapters.map((chapter, index) => (
               <Button
                 key={index}
                 variant={activeChapter === index ? "default" : "outline"}
                 onClick={() => setActiveChapter(index)}
-                className="flex-1 mr-4 last:mr-0"
+                className="w-full sm:flex-1"
               >
                 {chapter.title}
               </Button>
             ))}
           </div>
           <Card>
-            <CardContent className="p-8">
+            <CardContent className="p-6 sm:p-8">
               <motion.div
                 key={activeChapter}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
               >
-                <h3 className="text-2xl font-semibold mb-6 text-indigo-800">
+                <h3 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-indigo-800">
                   {chapters[activeChapter].title}
                 </h3>
-                <p className="text-lg mb-6 text-indigo-700">
+                <p className="text-base sm:text-lg mb-4 sm:mb-6 text-indigo-700">
                   {chapters[activeChapter].content}
                 </p>
                 <Button
@@ -770,6 +767,7 @@ function ExampleChaptersSection() {
     </section>
   );
 }
+
 
 function PurchaseSection({ onBookSelect }) {
   return (

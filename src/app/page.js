@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Headphones, ShoppingCart, ChevronDown,ChevronRight,ChevronLeft } from 'lucide-react'
 import PDFViewer from "@/components/PDFViewer"; // Import your PDFViewer component
+import books from './booksData'; // Import the books data
 
 
 function BookPage({ book, onBack, onAddToCart }) {
@@ -369,56 +370,13 @@ export default function Home() {
       {/* {cart.length > 0 && (
         // Remove the "סיים רכישה" button
       )} */}
-      <PurchaseSection />
+      <PurchaseSection onBookSelect={setSelectedBook}/>
     </main>
   );
 }
 
 
 function BooksShowcase({ onBookSelect }) {
-  const books = [
-    {
-      title: "תנו למספרים לדבר",
-      cover: "/pictures/let_the_number_talk_camera.jpg",
-      images: [
-        "/pictures/let_the_number_talk_camera.jpg",
-        "/pictures/tnu_front.jpg",
-        "/pictures/tnu_back.jpg",
-        // Add more image paths when you have them
-      ],
-      author: "רועי בנימין גרבר",
-      price: 89,
-      description: "מתמטיקה זה יותר ממספרים. הרבה יותר. מתמטיקה היא השפה של היקום כולו. היא שוברת את גבולות ההיגיון ובכל זאת מצליחה לתאר את היקום בדיוק של ייאמן. למה? איך? הצטרפו לגדולי המתמטיקאים והפילוסופים של כל הזמנים כדי לצאת יותר סקרנים משנכנסתם. הנאה מובטחת!",
-      details: {
-        pages: 146,
-        language: "עברית",
-        publisher: "הוצאה עצמית",
-        publicationDate: "ינואר 2025",
-        isbn: "978-1234567890",
-      }
-    },
-    {
-      title: "עשרה פרקים על",
-      cover: "/pictures/ten_episodes_on_camera.jpg",
-      images: [
-        "/pictures/ten_episodes_on_camera.jpg",
-        "/pictures/asara_front.jpg",
-        "/pictures/asara_back.jpg",
-        // Add more image paths when you have them
-      ],
-      author: "רועי בנימין גרבר",
-      price: 79,
-      description: "עשרה פרקים על הוא ספר בלתי שגרתי בעליל. הוא מספר את כל מה שצריך לדעת על 500 השנים הכי מעניינות (האחרונות) בצורה של סיפור, בלשון קלה, הומוריסטית ומרתקת. הספר מתאים לכל הגילאים ונמכר ביותר מ1000 עותקים. הצטרפו לקולומבוס, נפוליאון, הרצל, רייגן ועוד! בואו תעשו היסטוריה.",
-      details: {
-        pages: 350,
-        language: "עברית",
-        publisher: "הוצאה עצמית",
-        publicationDate: "פברואר 2020",
-        isbn: "978-9876543210",
-      }
-    },
-  ];
-
   return (
     <section className="py-20 bg-white">
       <div className="container mx-auto px-4">
@@ -467,7 +425,13 @@ function HeroSection() {
         />
         <h1 className="text-5xl font-bold mb-4 text-indigo-900">רועי בנימין גרבר</h1>
         <p className="text-xl text-indigo-700 max-w-2xl mx-auto mb-8">סופר, מתמטיקאי והיסטוריון חובב, בוגר תואר ראשון במדעי המחשב. רועי מפתח תוכנה באמזון.</p>
-        <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-white mb-16">לרכישה</Button>
+        <Button 
+          size="lg" 
+          className="bg-indigo-600 hover:bg-indigo-700 text-white mb-16"
+          onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })}
+        >
+          לרכישה
+        </Button>
       </motion.div>
       <motion.div
         animate={{ y: [0, 10, 0] }}
@@ -587,7 +551,7 @@ function RecommendationsSection() {
             >
               <Card className="h-full bg-gradient-to-br from-indigo-50 to-purple-50 hover:shadow-lg transition-shadow duration-300">
                 <CardContent className="p-8 flex flex-col justify-between h-full">
-                  <p className="text-lg mb-6 text-indigo-800">&apos'{rec.text}&apos'</p>
+                  <p className="text-lg mb-6 text-indigo-800">&apos;{rec.text}&apos;</p>
                   <p className="text-sm text-indigo-600 text-left">- {rec.author}</p>
                 </CardContent>
               </Card>
@@ -673,17 +637,13 @@ function ExampleChaptersSection() {
   );
 }
 
-function PurchaseSection() {
+function PurchaseSection({ onBookSelect }) {
   return (
     <section className="py-20 bg-white">
       <div className="container mx-auto px-4">
         <h2 className="text-4xl font-bold text-center mb-16 text-indigo-900">רכישת הספרים</h2>
         <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-          {[
-            { title: "עשרה פרקים על", price: "₪79" },
-            { title: "תנו למספרים לדבר", price: "₪89" },
-            { title: '"טובים השניים"', price: "₪149", discount: "חסכון של ₪19" },
-          ].map((item, index) => (
+          {books.map((item, index) => (
             <motion.div
               key={index}
               initial={{ opacity: 0, y: 50 }}
@@ -694,10 +654,13 @@ function PurchaseSection() {
                 <CardContent className="p-8 flex flex-col justify-between h-full">
                   <div>
                     <h3 className="text-2xl font-semibold mb-4">{item.title}</h3>
-                    <p className="text-4xl font-bold mb-4">{item.price}</p>
+                    <p className="text-4xl font-bold mb-4">{item.price} &#8362;</p>
                     {item.discount && <p className="mb-6 text-sm">{item.discount}</p>}
                   </div>
-                  <Button className={index === 2 ? "bg-white text-indigo-600 hover:bg-gray-100" : "bg-indigo-600 text-white hover:bg-indigo-700"}>
+                  <Button 
+                    onClick={() => onBookSelect(item)}
+                    className={index === 2 ? "bg-white text-indigo-600 hover:bg-gray-100" : "bg-indigo-600 text-white hover:bg-indigo-700"}
+                  >
                     <ShoppingCart className="mr-2" />
                     קנה עכשיו
                   </Button>

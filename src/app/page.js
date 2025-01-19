@@ -149,10 +149,10 @@ function BookPage({ book, onBack, onAddToCart }) {
 
 function PurchasePage({ cart, onBack, onPurchase, onUpdateCart }) {
   const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    address: '',
-    mail: '',
+    name: "",
+    phone: "",
+    address: "",
+    email: "", // שדה חדש למייל
   });
 
   const [errors, setErrors] = useState({});
@@ -162,16 +162,59 @@ function PurchasePage({ cart, onBack, onPurchase, onUpdateCart }) {
     if (!formData.name.trim()) newErrors.name = 'שם הוא שדה חובה';
     if (!formData.phone.trim()) newErrors.phone = 'טלפון הוא שדה חובה';
     if (!formData.address.trim()) newErrors.address = 'כתובת היא שדה חובה';
-    if (!formData.mail.trim()) newErrors.mail = 'כתובת דואר אלקטרוני הוא שדה חובה';
+    if (!formData.email.trim()) newErrors.email = 'כתובת דואר אלקטרוני הוא שדה חובה';
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validateForm()) {
+    
+    if (!validateForm()) {
+      alert("אנא מלא את כל השדות הנדרשים בטופס.");
+      return;
+    }
+    
+    const orderSummary = cart
+      .map((item) => `${item.title} (כמות: ${item.quantity}, ₪${item.price * item.quantity})`)
+      .join(", ");
+    
+    const payload = {
+      name: formData.name,
+      phone: formData.phone,
+      address: formData.address,
+      email: formData.email,
+      total: totalPrice,
+      order: orderSummary,
+    };
+    
+    try {
+
+  
+      // Then send the actual POST request
+      const response = await fetch(
+        "https://script.google.com/macros/s/AKfycbxCxJH-Ie2UOzuilq1y2VPvYlmggNH1QAhx776YuNtQmlQa-WH_74o6_KUS8_ysT-Za/exec",
+        {
+          method: "POST",
+          mode: "no-cors",
+          headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+  
+      // With mode: "no-cors", we can't read the response
+      // So we'll assume success if we got here without an error
+      console.log("Request completed");
+      alert("ההזמנה נשלחה בהצלחה!");
       onPurchase(formData);
+      
+    } catch (error) {
+      console.error("Error:", error);
+      alert("שגיאה בחיבור לשרת. אנא נסה שוב.");
     }
   };
 
@@ -297,16 +340,16 @@ function PurchasePage({ cart, onBack, onPurchase, onUpdateCart }) {
                 <label className="block text-right mb-2 text-indigo-900">כתובת דואר אלקטרוני</label>
                 <input
                   type="email"
-                  name="mail"
-                  value={formData.mail}
+                  name="email"
+                  value={formData.email}
                   onChange={handleInputChange}
                   className={`w-full p-3 border rounded-md text-right ${
-                    errors.mail ? 'border-red-500' : 'border-gray-300'
+                    errors.email ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="הכנס את כתובת הדואר האלקטרוני שלך"
                   required
                 />
-                {errors.mail && <p className="text-red-500 text-sm mt-1 text-right">{errors.mail}</p>}
+                {errors.email && <p className="text-red-500 text-sm mt-1 text-right">{errors.email}</p>}
               </div>
 
               <Button 

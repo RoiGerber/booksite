@@ -21,7 +21,7 @@ export default function Manage() {
   const [dragging, setDragging] = useState(false);
   const [editingFolderId, setEditingFolderId] = useState(null);
   const [newFolderName, setNewFolderName] = useState('');
-  const [uploadProgress, setUploadProgress] = useState({});
+  const [currentFileProgress, setCurrentFileProgress] = useState({});
   const [uploadStatus, setUploadStatus] = useState({});
 
 
@@ -61,59 +61,88 @@ export default function Manage() {
     return null;
   }
 
-  const handleMultipleFileUpload = async (folderId, files) => {
-    try {
-      const userDocRef = doc(db, 'users', user.uid);
-      const uploadedFiles = [];
   
-      for (const file of files) {
-        const filePath = `${user.uid}/${folderId}/${file.name}`;
-        const storageRef = ref(storage, filePath);
-  
-        const uploadTask = uploadBytesResumable(storageRef, file);
-  
+
+const handleMultipleFileUpload = async (folderId, files) => {
+  try {
+    const userDocRef = doc(db, 'users', user.uid);
+    const uploadedFiles = [];
+
+    // Initialize upload status for the folder
+    setUploadStatus((prev) => ({
+      ...prev,
+      [folderId]: { uploaded: 0, total: files.length },
+    }));
+
+    // Loop through each file and upload
+    for (const file of files) {
+      const filePath = `${user.uid}/${folderId}/${file.name}`;
+      const storageRef = ref(storage, filePath);
+
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
+      await new Promise((resolve, reject) => {
         uploadTask.on(
           'state_changed',
           (snapshot) => {
+            // Update current file upload progress
             const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-            setUploadProgress((prev) => ({
+            setCurrentFileProgress((prev) => ({
               ...prev,
               [folderId]: progress,
             }));
           },
-          (error) => {
-            console.error('Upload error:', error);
-          },
+          reject,
           async () => {
             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
             uploadedFiles.push({ name: file.name, url: downloadURL });
-  
-            // Reset progress for this folder once complete
-            setUploadProgress((prev) => ({
+
+            // Update uploaded count
+            setUploadStatus((prev) => ({
+              ...prev,
+              [folderId]: {
+                ...prev[folderId],
+                uploaded: prev[folderId].uploaded + 1,
+              },
+            }));
+
+            // Reset current file progress for this folder
+            setCurrentFileProgress((prev) => ({
               ...prev,
               [folderId]: 0,
             }));
-  
-            // Update Firestore and state when all files are uploaded
-            const updatedFolders = folders.map((folder) =>
-              folder.id === folderId
-                ? {
-                    ...folder,
-                    files: [...folder.files, ...uploadedFiles],
-                  }
-                : folder
-            );
-  
-            await updateDoc(userDocRef, { folders: updatedFolders });
-            setFolders(updatedFolders);
+            resolve();
           }
         );
-      }
-    } catch (error) {
-      console.error('File upload error:', error);
-      alert('Failed to upload files.');
+      });
     }
-  };
+
+    // Update Firestore with the new files
+    const updatedFolders = folders.map((folder) =>
+      folder.id === folderId
+        ? {
+            ...folder,
+            files: [...folder.files, ...uploadedFiles],
+          }
+        : folder
+    );
+
+    await updateDoc(userDocRef, { folders: updatedFolders });
+
+    // Update the local state and reset upload status
+    setFolders(updatedFolders);
+    setUploadStatus((prev) => ({
+      ...prev,
+      [folderId]: { uploaded: 0, total: 0 },
+    }));
+
+  } catch (error) {
+    console.error('File upload error:', error);
+    alert('Failed to upload files.');
+  }
+};
+
+  
 
   const handleFileUpload = async (folderId, file) => {
     try {
@@ -143,7 +172,7 @@ export default function Manage() {
       // Save the updated folders array to Firestore
       await updateDoc(userDocRef, { folders: updatedFolders });
   
-      alert('File uploaded successfully!');
+
     } catch (error) {
       console.error('File upload error:', error);
       alert('Failed to upload file.');
@@ -249,77 +278,89 @@ const handleCreateFolder = async () => {
       </motion.div>
   
       {/* Folder Grid */}
-      {folders.map((folder) => (
-  <motion.div
-    key={folder.id}
-    onDragOver={(e) => e.preventDefault()}
-    onDrop={(e) => {
-      e.preventDefault();
-      const files = Array.from(e.dataTransfer.files);
-      if (files.length > 0) {
-        handleMultipleFileUpload(folder.id, files);
-      }
-    }}
-    className={`relative border rounded-lg p-6 ${
-      dragging ? 'bg-indigo-100' : 'bg-white'
-    } shadow-md transition-transform ${
-      dragging ? 'scale-95 border-indigo-600' : 'hover:scale-105'
-    }`}
-    onDragEnter={() => setDragging(true)}
-    onDragLeave={() => setDragging(false)}
-  >
-    {/* Folder Header */}
-    <div className="flex justify-between items-center mb-4">
-      <h2 className="text-lg font-bold text-indigo-800 truncate">{folder.name}</h2>
-      <div>
-        <input
-          type="file"
-          multiple
-          onChange={(e) => {
-            const files = Array.from(e.target.files);
-            if (files.length > 0) {
-              handleMultipleFileUpload(folder.id, files);
-            }
-          }}
-          className="hidden"
-          id={`upload-${folder.id}`}
-        />
-        <label
-          htmlFor={`upload-${folder.id}`}
-          className="text-indigo-600 cursor-pointer hover:underline"
-        >
-          Upload Files
-        </label>
-      </div>
-    </div>
-
-    {/* Progress Bar */}
-    {uploadProgress[folder.id] > 0 && (
-      <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
-        <div
-          className="bg-indigo-600 h-2.5 rounded-full"
-          style={{ width: `${uploadProgress[folder.id]}%` }}
-        ></div>
-      </div>
-    )}
-
-    {/* Files List */}
-    <ul className="space-y-2">
-      {folder.files.map((file, index) => (
-        <li key={index} className="text-sm text-gray-700 truncate">
-          <a
-            href={file.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-indigo-600 hover:underline"
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+  {folders.map((folder) => (
+    <motion.div
+      key={folder.id}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => {
+        e.preventDefault();
+        const files = Array.from(e.dataTransfer.files);
+        if (files.length > 0) {
+          handleMultipleFileUpload(folder.id, files);
+        }
+      }}
+      className={`relative border rounded-lg p-6 ${
+        dragging ? 'bg-indigo-100' : 'bg-white'
+      } shadow-md transition-transform ${
+        dragging ? 'scale-95 border-indigo-600' : 'hover:scale-105'
+      }`}
+      onDragEnter={() => setDragging(true)}
+      onDragLeave={() => setDragging(false)}
+    >
+      {/* Folder Header */}
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-bold text-indigo-800 truncate">{folder.name}</h2>
+        <div>
+          <input
+            type="file"
+            multiple
+            onChange={(e) => {
+              const files = Array.from(e.target.files);
+              if (files.length > 0) {
+                handleMultipleFileUpload(folder.id, files);
+              }
+            }}
+            className="hidden"
+            id={`upload-${folder.id}`}
+          />
+          <label
+            htmlFor={`upload-${folder.id}`}
+            className="text-indigo-600 cursor-pointer hover:underline"
           >
-            {file.name}
-          </a>
-        </li>
-      ))}
-    </ul>
-  </motion.div>
-))}
+            Upload Files
+          </label>
+        </div>
+      </div>
+
+      {/* Current File Progress Bar */}
+      {currentFileProgress[folder.id] > 0 && (
+        <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+          <div
+            className="bg-green-500 h-2.5 rounded-full"
+            style={{ width: `${currentFileProgress[folder.id]}%` }}
+          ></div>
+        </div>
+      )}
+
+      {/* Upload Progress Indicator */}
+      {uploadStatus[folder.id]?.total > 0 && (
+        <div className="text-sm text-gray-600 mt-2">
+          Uploaded {uploadStatus[folder.id]?.uploaded} of {uploadStatus[folder.id]?.total} files
+        </div>
+      )}
+
+      {/* Files List */}
+      <ul className="space-y-2">
+        {folder.files.map((file, index) => (
+          <li key={index} className="text-sm text-gray-700 truncate">
+            <a
+              href={file.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-indigo-600 hover:underline"
+            >
+              {file.name}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </motion.div>
+  ))}
+</div>
+
+
 
     </div>
   );

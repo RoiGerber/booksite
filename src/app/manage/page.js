@@ -7,7 +7,10 @@ import { PencilIcon, TrashIcon, PlusIcon } from 'lucide-react';
 import { useAuth } from '@/lib/auth'; // Use your AuthContext
 import { useRouter } from 'next/navigation'; // For navigation
 import { doc, setDoc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
-import { db } from '@/lib/firebaseConfig';
+import { ref, uploadBytes,uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+
+import { storage, db } from '@/lib/firebaseConfig';
+
 
 export default function Manage() {
   const { user, loading } = useAuth(); // Get user and loading state
@@ -18,6 +21,10 @@ export default function Manage() {
   const [dragging, setDragging] = useState(false);
   const [editingFolderId, setEditingFolderId] = useState(null);
   const [newFolderName, setNewFolderName] = useState('');
+  const [uploadProgress, setUploadProgress] = useState({});
+  const [uploadStatus, setUploadStatus] = useState({});
+
+
 
   // Redirect unauthenticated users
   useEffect(() => {
@@ -54,6 +61,94 @@ export default function Manage() {
     return null;
   }
 
+  const handleMultipleFileUpload = async (folderId, files) => {
+    try {
+      const userDocRef = doc(db, 'users', user.uid);
+      const uploadedFiles = [];
+  
+      for (const file of files) {
+        const filePath = `${user.uid}/${folderId}/${file.name}`;
+        const storageRef = ref(storage, filePath);
+  
+        const uploadTask = uploadBytesResumable(storageRef, file);
+  
+        uploadTask.on(
+          'state_changed',
+          (snapshot) => {
+            const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+            setUploadProgress((prev) => ({
+              ...prev,
+              [folderId]: progress,
+            }));
+          },
+          (error) => {
+            console.error('Upload error:', error);
+          },
+          async () => {
+            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+            uploadedFiles.push({ name: file.name, url: downloadURL });
+  
+            // Reset progress for this folder once complete
+            setUploadProgress((prev) => ({
+              ...prev,
+              [folderId]: 0,
+            }));
+  
+            // Update Firestore and state when all files are uploaded
+            const updatedFolders = folders.map((folder) =>
+              folder.id === folderId
+                ? {
+                    ...folder,
+                    files: [...folder.files, ...uploadedFiles],
+                  }
+                : folder
+            );
+  
+            await updateDoc(userDocRef, { folders: updatedFolders });
+            setFolders(updatedFolders);
+          }
+        );
+      }
+    } catch (error) {
+      console.error('File upload error:', error);
+      alert('Failed to upload files.');
+    }
+  };
+
+  const handleFileUpload = async (folderId, file) => {
+    try {
+      const userDocRef = doc(db, 'users', user.uid); // Reference to the user's document
+  
+      // Create a unique path in Firebase Storage for the file
+      const filePath = `${user.uid}/${folderId}/${file.name}`;
+      const storageRef = ref(storage, filePath);
+  
+      // Upload the file to Firebase Storage
+      const uploadResult = await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(uploadResult.ref); // Get the file's public URL
+  
+      // Update local folders state with the new file
+      const updatedFolders = folders.map((folder) =>
+        folder.id === folderId
+          ? {
+              ...folder,
+              files: [...folder.files, { name: file.name, url: downloadURL }],
+            }
+          : folder
+      );
+  
+      // Update the local state immediately to reflect changes in the UI
+      setFolders(updatedFolders);
+  
+      // Save the updated folders array to Firestore
+      await updateDoc(userDocRef, { folders: updatedFolders });
+  
+      alert('File uploaded successfully!');
+    } catch (error) {
+      console.error('File upload error:', error);
+      alert('Failed to upload file.');
+    }
+  };
   
 const handleCreateFolder = async () => {
   const newFolder = {
@@ -134,9 +229,10 @@ const handleCreateFolder = async () => {
         <h1 className="text-4xl font-extrabold text-indigo-800" style={{ marginTop: '10vh' }}>
           Manage Your Folders
         </h1>
-        <p className="text-gray-600 mt-2">Organize your photos effortlessly with modern tools.</p>
+        <p className="text-gray-600 mt-2">Organize your files effortlessly with modern tools.</p>
       </motion.div>
-
+  
+      {/* Create Folder Button */}
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -151,71 +247,81 @@ const handleCreateFolder = async () => {
           Create Folder
         </Button>
       </motion.div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {folders.map((folder) => (
-          <motion.div
-            key={folder.id}
-            className={`relative border rounded-lg p-6 bg-white shadow-md transition-transform ${
-              dragging ? 'scale-95 border-indigo-600' : 'hover:scale-105'
-            }`}
-            onDragOver={(e) => e.preventDefault()}
-            onDragEnter={() => setDragging(true)}
-            onDragLeave={() => setDragging(false)}
-            onDrop={(e) => handleDrop(e, folder.id)}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <div className="flex justify-between items-center mb-4">
-              {editingFolderId === folder.id ? (
-                <input
-                  type="text"
-                  value={newFolderName}
-                  onChange={(e) => setNewFolderName(e.target.value)}
-                  onBlur={() => handleRenameFolder(folder.id)}
-                  className="w-full border-b-2 border-indigo-600 outline-none text-lg font-semibold"
-                  placeholder="Rename folder"
-                  autoFocus
-                />
-              ) : (
-                <h2
-                  className="text-lg font-bold text-indigo-800 cursor-pointer truncate"
-                  onClick={() => {
-                    setEditingFolderId(folder.id);
-                    setNewFolderName(folder.name);
-                  }}
-                >
-                  {folder.name}
-                </h2>
-              )}
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setEditingFolderId(folder.id);
-                    setNewFolderName(folder.name);
-                  }}
-                >
-                  <PencilIcon className="w-5 h-5 text-gray-600 hover:text-indigo-600" />
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => handleRemoveFolder(folder.id)}>
-                  <TrashIcon className="w-5 h-5 text-red-500 hover:text-red-700" />
-                </Button>
-              </div>
-            </div>
-            <ul className="space-y-2">
-              {folder.files.map((file, index) => (
-                <li key={index} className="text-sm text-gray-700 truncate" title={file.name}>
-                  {file.name}
-                </li>
-              ))}
-            </ul>
-            {folder.files.length === 0 && <p className="text-gray-400 text-sm mt-4">Drag and drop files here</p>}
-          </motion.div>
-        ))}
+  
+      {/* Folder Grid */}
+      {folders.map((folder) => (
+  <motion.div
+    key={folder.id}
+    onDragOver={(e) => e.preventDefault()}
+    onDrop={(e) => {
+      e.preventDefault();
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length > 0) {
+        handleMultipleFileUpload(folder.id, files);
+      }
+    }}
+    className={`relative border rounded-lg p-6 ${
+      dragging ? 'bg-indigo-100' : 'bg-white'
+    } shadow-md transition-transform ${
+      dragging ? 'scale-95 border-indigo-600' : 'hover:scale-105'
+    }`}
+    onDragEnter={() => setDragging(true)}
+    onDragLeave={() => setDragging(false)}
+  >
+    {/* Folder Header */}
+    <div className="flex justify-between items-center mb-4">
+      <h2 className="text-lg font-bold text-indigo-800 truncate">{folder.name}</h2>
+      <div>
+        <input
+          type="file"
+          multiple
+          onChange={(e) => {
+            const files = Array.from(e.target.files);
+            if (files.length > 0) {
+              handleMultipleFileUpload(folder.id, files);
+            }
+          }}
+          className="hidden"
+          id={`upload-${folder.id}`}
+        />
+        <label
+          htmlFor={`upload-${folder.id}`}
+          className="text-indigo-600 cursor-pointer hover:underline"
+        >
+          Upload Files
+        </label>
       </div>
     </div>
+
+    {/* Progress Bar */}
+    {uploadProgress[folder.id] > 0 && (
+      <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+        <div
+          className="bg-indigo-600 h-2.5 rounded-full"
+          style={{ width: `${uploadProgress[folder.id]}%` }}
+        ></div>
+      </div>
+    )}
+
+    {/* Files List */}
+    <ul className="space-y-2">
+      {folder.files.map((file, index) => (
+        <li key={index} className="text-sm text-gray-700 truncate">
+          <a
+            href={file.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-indigo-600 hover:underline"
+          >
+            {file.name}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </motion.div>
+))}
+
+    </div>
   );
+  
 }

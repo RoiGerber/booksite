@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { PencilIcon, TrashIcon, PlusIcon } from 'lucide-react';
 import { useAuth } from '@/lib/auth'; // Use your AuthContext
 import { useRouter } from 'next/navigation'; // For navigation
+import { doc, setDoc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { db } from '@/lib/firebaseConfig';
 
 export default function Manage() {
   const { user, loading } = useAuth(); // Get user and loading state
@@ -24,6 +26,24 @@ export default function Manage() {
     }
   }, [user, loading, router]);
 
+  useEffect(() => {
+    const fetchFolders = async () => {
+      if (!user) return;
+  
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+  
+      if (userDocSnap.exists()) {
+        const data = userDocSnap.data();
+        setFolders(data.folders || []);
+      } else {
+        console.log('No folders found for this user.');
+      }
+    };
+  
+    fetchFolders();
+  }, [user]);
+
   // Render a loading state if still verifying authentication
   if (loading) {
     return <div>Loading...</div>;
@@ -34,29 +54,60 @@ export default function Manage() {
     return null;
   }
 
-  // Folder management functions
-  const handleCreateFolder = () => {
-    const newFolder = {
-      id: folders.length + 1,
-      name: `Untitled Folder`,
-      files: [],
-    };
-    setFolders([...folders, newFolder]);
+  
+const handleCreateFolder = async () => {
+  const newFolder = {
+    id: folders.length + 1,
+    name: `Untitled Folder`,
+    files: [],
   };
 
-  const handleRenameFolder = (folderId) => {
+  try {
+    const userDocRef = doc(db, 'users', user.uid); // Reference to the user's document
+
+    // Check if the document exists
+    const userDocSnap = await getDoc(userDocRef);
+
+    if (userDocSnap.exists()) {
+      // Document exists: Update the folders array
+      await updateDoc(userDocRef, {
+        folders: arrayUnion(newFolder),
+      });
+    } else {
+      // Document does not exist: Create it with the initial folder
+      await setDoc(userDocRef, { folders: [newFolder] });
+    }
+
+    // Update local state
+    setFolders((prev) => [...prev, newFolder]);
+  } catch (error) {
+    console.error('Firestore Write Error:', error);
+  }
+};
+
+  const handleRenameFolder = async (folderId) => {
     if (!newFolderName.trim()) return;
-    setFolders((prev) =>
-      prev.map((folder) =>
-        folder.id === folderId ? { ...folder, name: newFolderName } : folder
-      )
+  
+    const updatedFolders = folders.map((folder) =>
+      folder.id === folderId ? { ...folder, name: newFolderName } : folder
     );
-    setEditingFolderId(null); // Exit edit mode
-    setNewFolderName(''); // Clear input
+  
+    setFolders(updatedFolders);
+  
+    const userDocRef = doc(db, 'users', user.uid);
+    await updateDoc(userDocRef, { folders: updatedFolders });
+  
+    setEditingFolderId(null);
+    setNewFolderName('');
   };
-
-  const handleRemoveFolder = (folderId) => {
-    setFolders((prev) => prev.filter((folder) => folder.id !== folderId));
+  
+  const handleRemoveFolder = async (folderId) => {
+    const updatedFolders = folders.filter((folder) => folder.id !== folderId);
+  
+    setFolders(updatedFolders);
+  
+    const userDocRef = doc(db, 'users', user.uid);
+    await updateDoc(userDocRef, { folders: updatedFolders });
   };
 
   const handleDrop = (event, folderId) => {

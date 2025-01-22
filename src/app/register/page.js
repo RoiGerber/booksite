@@ -16,9 +16,9 @@ import {
   User,
   Users
 } from 'lucide-react';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebaseConfig';
-
+import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { auth, db } from '@/lib/firebaseConfig'; // Ensure Firestore is imported
+import { doc, setDoc } from 'firebase/firestore'; // For saving user roles
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -117,17 +117,60 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [userType, setUserType] = useState('');
 
-  
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validate role selection
+    if (!userType) {
+      alert('Please select a role (Photographer or Client).');
+      return;
+    }
+
+    // Validate password match
     if (password !== confirmPassword) {
       alert('Passwords do not match!');
       return;
     }
+
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      // Register with email/password
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Save user role to Firestore in the `usersDB` collection, using email as the document ID
+      await setDoc(doc(db, 'usersDB', email), {
+        email: user.email,
+        role: userType,
+      });
+
       alert(`Registered successfully as ${userType}!`);
-      // Redirect to home or manage
+      // Redirect to home or dashboard
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    // Validate role selection
+    if (!userType) {
+      alert('Please select a role (Photographer or Client).');
+      return;
+    }
+
+    const provider = new GoogleAuthProvider();
+    try {
+      // Sign in with Google
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      // Save user role to Firestore in the `usersDB` collection, using email as the document ID
+      await setDoc(doc(db, 'usersDB', user.email), {
+        email: user.email,
+        role: userType,
+      });
+
+      alert(`Registered successfully with Google as ${userType}!`);
+      // Redirect to home or dashboard
     } catch (error) {
       alert(error.message);
     }
@@ -241,7 +284,7 @@ export default function RegisterPage() {
           <SocialButton
             icon={MailIcon}
             label="Google"
-            onClick={() => {}}
+            onClick={handleGoogleSignIn}
           />
         </div>
 

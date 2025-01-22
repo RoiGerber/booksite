@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -28,17 +28,89 @@ import {
   MapIcon,
   XIcon,
 } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import axios from 'axios';
 
-const EventMap = ({ events, onEventSelect }) => (
-  <div className="h-[70vh] bg-gray-100 rounded-lg relative">
-    {/* Integrate your map component here */}
-    <div className="absolute top-4 right-4 bg-white p-4 rounded-lg shadow-md">
-      <h3 className="font-bold text-sm mb-2">Events Found: {events.length}</h3>
-      {/* Add map controls/legend */}
-    </div>
-  </div>
-);
+// Fix for default marker icons in Leaflet
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+});
 
+// API configuration
+const api_url = 'https://data.gov.il/api/3/action/datastore_search';
+const cities_resource_id = '5c78e9fa-c2e2-4771-93ff-7f400a12f7ba';
+const city_name_key = 'שם_ישוב';
+
+// Helper function to fetch cities
+const fetchCities = async () => {
+  const response = await axios.get(api_url, {
+    params: { resource_id: cities_resource_id, limit: 32000 },
+  });
+  const records = response.data.result.records;
+  const cityNames = records.map((record) => record[city_name_key].trim());
+  return cityNames;
+};
+
+// Israel Map Component
+const IsraelMap = ({ events, onEventSelect }) => {
+  const israelCenter = [31.0461, 34.8516]; // Approximate center of Israel
+  const zoomLevel = 7;
+
+  return (
+    <MapContainer
+      center={israelCenter}
+      zoom={zoomLevel}
+      style={{ height: '70vh', width: '100%', borderRadius: '0.5rem', zIndex:"5" }}
+      scrollWheelZoom={true}
+      
+    >
+      <TileLayer
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      />
+      {events.map((event) => {
+        const eventCoordinates = getCoordinatesForCity(event.city);
+        return (
+          <Marker
+            key={event.id}
+            position={eventCoordinates}
+            eventHandlers={{
+              click: () => onEventSelect(event),
+            }}
+          >
+            <Popup>
+              <div>
+                <h3 className="font-bold">{event.name}</h3>
+                <p>{event.type}</p>
+                <p>{event.city}, {event.region}</p>
+              </div>
+            </Popup>
+          </Marker>
+        );
+      })}
+    </MapContainer>
+  );
+};
+
+// Helper function to get coordinates for cities in Israel
+const getCoordinatesForCity = (city) => {
+  const cityCoordinates = {
+    'Jerusalem': [31.7683, 35.2137],
+    'Tel Aviv': [32.0853, 34.7818],
+    'Haifa': [32.7940, 34.9896],
+    'Beer Sheva': [31.2518, 34.7913],
+    'Eilat': [29.5577, 34.9519],
+    // Add more cities as needed
+  };
+  return cityCoordinates[city] || [31.0461, 34.8516]; // Default to Israel center
+};
+
+// EventCard Component
 const EventCard = ({ event }) => (
   <motion.div
     layout
@@ -79,6 +151,7 @@ const EventCard = ({ event }) => (
   </motion.div>
 );
 
+// Pagination Component
 const Pagination = ({ currentPage, totalPages, onPageChange }) => {
   return (
     <div className="flex justify-center items-center gap-2 mt-8">
@@ -103,10 +176,11 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
   );
 };
 
+// Main Component
 export default function EventMarketplace() {
   const [filters, setFilters] = useState({
     search: '',
-    region: '',
+    region: 'all',
     city: '',
     type: '',
     dateRange: {
@@ -120,9 +194,9 @@ export default function EventMarketplace() {
   const [sortOrder, setSortOrder] = useState('date-asc');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(12);
+  const [cities, setCities] = useState([]);
+  const [loadingCities, setLoadingCities] = useState(true);
 
-  const regions = ['Jerusalem', 'North', 'Haifa', 'Center', 'Tel Aviv', 'South'];
-  const cities = ['Seattle', 'Portland', 'San Francisco', 'Los Angeles'];
   const eventTypes = ['Wedding', 'Corporate', 'Birthday', 'Concert', 'Sports'];
 
   const sampleEvents = [
@@ -132,9 +206,9 @@ export default function EventMarketplace() {
       type: 'Wedding',
       date: '2025-06-21',
       address: '123 Beach Blvd',
-      city: 'San Francisco',
-      region: 'California',
-      contactName: 'Emily Johnson'
+      city: 'Jerusalem',
+      region: 'Jerusalem District',
+      contactName: 'Emily Johnson',
     },
     {
       id: 2,
@@ -142,9 +216,9 @@ export default function EventMarketplace() {
       type: 'Corporate',
       date: '2025-03-15',
       address: '456 Innovation Way',
-      city: 'Seattle',
-      region: 'Washington',
-      contactName: 'Michael Chen'
+      city: 'Tel Aviv',
+      region: 'Tel Aviv District',
+      contactName: 'Michael Chen',
     },
     {
       id: 3,
@@ -152,284 +226,32 @@ export default function EventMarketplace() {
       type: 'Concert',
       date: '2025-07-04',
       address: '789 Music Lane',
-      city: 'Los Angeles',
-      region: 'California',
-      contactName: 'Sarah Wilson'
+      city: 'Haifa',
+      region: 'Haifa District',
+      contactName: 'Sarah Wilson',
     },
-    {
-      id: 4,
-      name: 'Charity Gala Dinner',
-      type: 'Corporate',
-      date: '2025-05-20',
-      address: '321 Charity Ave',
-      city: 'New York',
-      region: 'New York',
-      contactName: 'David Miller'
-    },
-    {
-      id: 5,
-      name: 'Outdoor Adventure Wedding',
-      type: 'Wedding',
-      date: '2025-08-15',
-      address: '555 Mountain Rd',
-      city: 'Portland',
-      region: 'Oregon',
-      contactName: 'Rachel Green'
-    },
-    {
-      id: 6,
-      name: 'Pro Basketball Championship',
-      type: 'Sports',
-      date: '2025-06-10',
-      address: '888 Arena Blvd',
-      city: 'Los Angeles',
-      region: 'California',
-      contactName: 'Chris Thompson'
-    },
-    {
-      id: 7,
-      name: 'Vintage Car Exhibition',
-      type: 'Corporate',
-      date: '2025-09-05',
-      address: '222 Classic Rd',
-      city: 'San Francisco',
-      region: 'California',
-      contactName: 'Olivia Parker'
-    },
-    {
-      id: 8,
-      name: 'Sweet Sixteen Extravaganza',
-      type: 'Birthday',
-      date: '2025-04-12',
-      address: '777 Party Lane',
-      city: 'New York',
-      region: 'New York',
-      contactName: 'Sophia Martinez'
-    },
-    {
-      id: 9,
-      name: 'Jazz Night Under the Stars',
-      type: 'Concert',
-      date: '2025-07-25',
-      address: '444 Jazz Ave',
-      city: 'Portland',
-      region: 'Oregon',
-      contactName: 'Daniel White'
-    },
-    {
-      id: 10,
-      name: 'Startup Pitch Competition',
-      type: 'Corporate',
-      date: '2025-02-28',
-      address: '999 Venture St',
-      city: 'Seattle',
-      region: 'Washington',
-      contactName: 'Jennifer Lee'
-    },
-    {
-      id: 11,
-      name: 'Winter Wonderland Wedding',
-      type: 'Wedding',
-      date: '2025-12-12',
-      address: '101 Snowflake Rd',
-      city: 'Portland',
-      region: 'Oregon',
-      contactName: 'Ryan Frost'
-    },
-    {
-      id: 12,
-      name: 'Marathon Championship',
-      type: 'Sports',
-      date: '2025-10-10',
-      address: '303 Fitness Way',
-      city: 'Los Angeles',
-      region: 'California',
-      contactName: 'Michelle Carter'
-    },
-    {
-      id: 13,
-      name: 'Corporate Leadership Summit',
-      type: 'Corporate',
-      date: '2025-11-05',
-      address: '606 Executive Blvd',
-      city: 'San Francisco',
-      region: 'California',
-      contactName: 'Brian Taylor'
-    },
-    {
-      id: 14,
-      name: 'Electronic Dance Festival',
-      type: 'Concert',
-      date: '2025-08-20',
-      address: '707 Bass Lane',
-      city: 'New York',
-      region: 'New York',
-      contactName: 'Alex Johnson'
-    },
-    {
-      id: 15,
-      name: 'Golden Anniversary Party',
-      type: 'Birthday',
-      date: '2025-09-01',
-      address: '888 Memory Lane',
-      city: 'Seattle',
-      region: 'Washington',
-      contactName: 'Grace Wilson'
-    },
-    {
-      id: 16,
-      name: 'Beachside Wedding Ceremony',
-      type: 'Wedding',
-      date: '2025-07-10',
-      address: '234 Ocean Dr',
-      city: 'Los Angeles',
-      region: 'California',
-      contactName: 'Lucas Brown'
-    },
-    {
-      id: 17,
-      name: 'Food & Wine Conference',
-      type: 'Corporate',
-      date: '2025-04-18',
-      address: '543 Culinary Ave',
-      city: 'Portland',
-      region: 'Oregon',
-      contactName: 'Emma Davis'
-    },
-    {
-      id: 18,
-      name: 'Pro Tennis Open',
-      type: 'Sports',
-      date: '2025-05-30',
-      address: '876 Court Rd',
-      city: 'New York',
-      region: 'New York',
-      contactName: 'Kevin Adams'
-    },
-    {
-      id: 19,
-      name: 'Country Music Night',
-      type: 'Concert',
-      date: '2025-06-05',
-      address: '321 Harmony St',
-      city: 'San Francisco',
-      region: 'California',
-      contactName: 'Amanda Smith'
-    },
-    {
-      id: 20,
-      name: 'Surprise 40th Birthday',
-      type: 'Birthday',
-      date: '2025-03-22',
-      address: '654 Celebration Way',
-      city: 'Seattle',
-      region: 'Washington',
-      contactName: 'Nathan Young'
-    },
-    {
-      id: 21,
-      name: 'Mountain Retreat Wedding',
-      type: 'Wedding',
-      date: '2025-09-15',
-      address: '789 Alpine Way',
-      city: 'Portland',
-      region: 'Oregon',
-      contactName: 'Hannah Clark'
-    },
-    {
-      id: 22,
-      name: 'Tech Product Launch',
-      type: 'Corporate',
-      date: '2025-01-15',
-      address: '432 Future St',
-      city: 'Los Angeles',
-      region: 'California',
-      contactName: 'Ethan Moore'
-    },
-    {
-      id: 23,
-      name: 'Charity Basketball Match',
-      type: 'Sports',
-      date: '2025-02-14',
-      address: '765 Hoops Ave',
-      city: 'New York',
-      region: 'New York',
-      contactName: 'Jessica Hall'
-    },
-    {
-      id: 24,
-      name: 'Classical Symphony Night',
-      type: 'Concert',
-      date: '2025-04-05',
-      address: '987 Orchestra Ln',
-      city: 'San Francisco',
-      region: 'California',
-      contactName: 'William Brown'
-    },
-    {
-      id: 25,
-      name: 'Milestone 1st Birthday',
-      type: 'Birthday',
-      date: '2025-05-05',
-      address: '111 Rainbow Rd',
-      city: 'Portland',
-      region: 'Oregon',
-      contactName: 'Sophie Turner'
-    },
-    {
-      id: 26,
-      name: 'Vineyard Wedding Experience',
-      type: 'Wedding',
-      date: '2025-10-05',
-      address: '222 Grapevine Way',
-      city: 'Los Angeles',
-      region: 'California',
-      contactName: 'Oliver Martin'
-    },
-    {
-      id: 27,
-      name: 'Annual Shareholder Meeting',
-      type: 'Corporate',
-      date: '2025-12-01',
-      address: '333 Finance Blvd',
-      city: 'New York',
-      region: 'New York',
-      contactName: 'Natalie King'
-    },
-    {
-      id: 28,
-      name: 'Surfing Championship',
-      type: 'Sports',
-      date: '2025-08-08',
-      address: '444 Wave Cr',
-      city: 'San Francisco',
-      region: 'California',
-      contactName: 'Jake Wilson'
-    },
-    {
-      id: 29,
-      name: 'Indie Music Festival',
-      type: 'Concert',
-      date: '2025-07-18',
-      address: '555 Alternative Way',
-      city: 'Seattle',
-      region: 'Washington',
-      contactName: 'Lily Adams'
-    },
-    {
-      id: 30,
-      name: 'Quinceañera Celebration',
-      type: 'Birthday',
-      date: '2025-11-20',
-      address: '666 Tradition St',
-      city: 'Los Angeles',
-      region: 'California',
-      contactName: 'Maria Garcia'
-    }
+    // Add more sample events as needed
   ];
 
   const events = sampleEvents;
 
+  // Fetch cities on component mount
+  useEffect(() => {
+    const loadCities = async () => {
+      try {
+        const cityNames = await fetchCities();
+        setCities(cityNames);
+      } catch (error) {
+        console.error('Error fetching cities:', error);
+      } finally {
+        setLoadingCities(false);
+      }
+    };
+
+    loadCities();
+  }, []);
+
+  // Handle filter changes
   const handleFilterChange = (type, value) => {
     setFilters((prev) => ({ ...prev, [type]: value }));
     setCurrentPage(1); // Reset to the first page when filters change
@@ -457,6 +279,7 @@ export default function EventMarketplace() {
     }
   };
 
+  // Remove a filter
   const removeFilter = (type) => {
     if (type === 'dateRange') {
       handleFilterChange(type, { from: null, to: null });
@@ -466,43 +289,35 @@ export default function EventMarketplace() {
   };
 
   const filteredEvents = useMemo(() => {
-    return events
-      .filter((event) => {
-        const matchesSearch =
-          !filters.search ||
-          event.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-          event.type.toLowerCase().includes(filters.search.toLowerCase()) ||
-          event.city.toLowerCase().includes(filters.search.toLowerCase());
-
-        const matchesRegion = !filters.region || event.region === filters.region;
-        const matchesCity = !filters.city || event.city === filters.city;
-        const matchesType = !filters.type || event.type === filters.type;
-
-        const eventDate = new Date(event.date);
-        const fromDate = filters.dateRange.from ? new Date(filters.dateRange.from) : null;
-        const toDate = filters.dateRange.to ? new Date(filters.dateRange.to) : null;
-
-        const matchesDateRange =
-          (!fromDate && !toDate) ||
-          (fromDate && toDate && eventDate >= fromDate && eventDate <= toDate);
-
-        return matchesSearch && matchesRegion && matchesCity && matchesType && matchesDateRange;
-      })
-      .sort((a, b) => {
-        switch (sortOrder) {
-          case 'date-asc':
-            return new Date(a.date) - new Date(b.date);
-          case 'date-desc':
-            return new Date(b.date) - new Date(a.date);
-          case 'name-asc':
-            return a.name.localeCompare(b.name);
-          case 'name-desc':
-            return b.name.localeCompare(a.name);
-          default:
-            return 0;
-        }
-      });
+    return events.filter(event => {
+      const searchMatch = !filters.search || 
+        event.name.toLowerCase().includes(filters.search.toLowerCase()) ||
+        event.city.toLowerCase().includes(filters.search.toLowerCase());
+  
+      const cityMatch = !filters.city ||
+        event.city.toLowerCase().includes(filters.city.toLowerCase());
+  
+      const regionMatch = filters.region === "all" || // Show all events if region is "all"
+        event.region === filters.region;
+  
+      const dateFrom = filters.dateRange.from ? new Date(filters.dateRange.from) : null;
+      const dateTo = filters.dateRange.to ? new Date(filters.dateRange.to) : null;
+      const eventDate = new Date(event.date);
+      
+      const dateMatch = (!dateFrom && !dateTo) || 
+        (eventDate >= dateFrom && eventDate <= dateTo);
+  
+      return searchMatch && cityMatch && regionMatch && dateMatch;
+    }).sort((a, b) => {
+      if (sortOrder === 'date-asc') {
+        return new Date(a.date) - new Date(b.date);
+      } else if (sortOrder === 'date-desc') {
+        return new Date(b.date) - new Date(a.date);
+      }
+      return 0;
+    });
   }, [events, filters, sortOrder]);
+  
 
   const indexOfLastEvent = currentPage * itemsPerPage;
   const indexOfFirstEvent = indexOfLastEvent - itemsPerPage;
@@ -535,7 +350,7 @@ export default function EventMarketplace() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-indigo-50 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-indigo-50 p-24">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -554,7 +369,7 @@ export default function EventMarketplace() {
       <div className="max-w-7xl mx-auto">
         {/* Search and Filters */}
         <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div className="relative">
               <SearchIcon className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
               <Input
@@ -565,32 +380,18 @@ export default function EventMarketplace() {
               />
             </div>
 
-            <Select onValueChange={(value) => handleFilterChange('region', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select Region" />
-              </SelectTrigger>
-              <SelectContent>
-                {regions.map((region) => (
-                  <SelectItem key={region} value={region}>
-                    {region}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* City Search */}
+            <div className="relative">
+              <SearchIcon className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
+              <Input
+                placeholder="Search city..."
+                className="pl-10"
+                value={filters.city}
+                onChange={(e) => handleFilterChange('city', e.target.value)}
+              />
+            </div>
 
-            <Select onValueChange={(value) => handleFilterChange('city', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select City" />
-              </SelectTrigger>
-              <SelectContent>
-                {cities.map((city) => (
-                  <SelectItem key={city} value={city}>
-                    {city}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
+            {/* Event Type Selector */}
             <Select onValueChange={(value) => handleFilterChange('type', value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Event Type" />
@@ -604,6 +405,30 @@ export default function EventMarketplace() {
               </SelectContent>
             </Select>
 
+
+            <Select
+  value={filters.region}
+  onValueChange={(value) => setFilters({ ...filters, region: value })}
+>
+  <SelectTrigger className="w-[180px]">
+    <SelectValue placeholder="Select Region" />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectGroup>
+      <SelectItem value="all">All Regions</SelectItem> {/* Use "all" instead of "" */}
+      <SelectItem value="North">North</SelectItem>
+      <SelectItem value="Haifa">Haifa</SelectItem>
+      <SelectItem value="Center">Center</SelectItem>
+      <SelectItem value="Tel Aviv">Tel Aviv</SelectItem>
+      <SelectItem value="South">South</SelectItem>
+      <SelectItem value="Judea and Samaria">Judea and Samaria</SelectItem>
+      <SelectItem value="Jerusalem">Jerusalem</SelectItem>
+    </SelectGroup>
+  </SelectContent>
+</Select>
+
+
+            {/* Date Range Selector */}
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" className="w-full justify-start text-left font-normal">
@@ -615,7 +440,7 @@ export default function EventMarketplace() {
                     : 'Select dates'}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent className="w-auto z-[1000]p-0" align="start">
                 <Calendar
                   initialFocus
                   mode="range"
@@ -670,7 +495,7 @@ export default function EventMarketplace() {
                 onClick={() => {
                   setFilters({
                     search: '',
-                    region: '',
+                    region: 'all',
                     city: '',
                     type: '',
                     dateRange: { from: null, to: null },
@@ -739,7 +564,8 @@ export default function EventMarketplace() {
               exit={{ opacity: 0 }}
               className="rounded-xl overflow-hidden shadow-lg"
             >
-              <EventMap
+              <IsraelMap
+                
                 events={currentEvents}
                 onEventSelect={(event) => console.log('Selected:', event)}
               />

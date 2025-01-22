@@ -34,6 +34,8 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import axios from 'axios';
+import { useAuth } from '@/lib/auth'; // Import the authentication hook
+import { useRouter } from 'next/navigation'; // For navigation
 
 // Fix for default marker icons in Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -67,9 +69,8 @@ const IsraelMap = ({ events, onEventSelect }) => {
     <MapContainer
       center={israelCenter}
       zoom={zoomLevel}
-      style={{ height: '70vh', width: '100%', borderRadius: '0.5rem', zIndex:"5" }}
+      style={{ height: '70vh', width: '100%', borderRadius: '0.5rem', zIndex: "5" }}
       scrollWheelZoom={true}
-      
     >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -154,43 +155,42 @@ const EventCard = ({ event }) => (
 );
 
 const SkeletonCard = () => {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative border rounded-lg p-6 bg-white shadow-md"
-      >
-        <div className="flex justify-between items-start mb-4">
-          <div className="space-y-2">
-            {/* Placeholder for event name */}
-            <div className="h-6 bg-gray-200 rounded w-3/4 animate-pulse"></div>
-            {/* Placeholder for event type */}
-            <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div>
-          </div>
-          {/* Placeholder for button */}
-          <div className="h-10 bg-gray-200 rounded w-24 animate-pulse"></div>
-        </div>
-  
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="relative border rounded-lg p-6 bg-white shadow-md"
+    >
+      <div className="flex justify-between items-start mb-4">
         <div className="space-y-2">
-          {/* Placeholder for date */}
-          <div className="flex items-center">
-            <div className="h-4 bg-gray-200 rounded w-4 mr-2 animate-pulse"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div>
-          </div>
-          {/* Placeholder for location */}
-          <div className="flex items-center">
-            <div className="h-4 bg-gray-200 rounded w-4 mr-2 animate-pulse"></div>
-            <div className="h-4 bg-gray-200 rounded w-2/3 animate-pulse"></div>
-          </div>
-          {/* Placeholder for contact */}
-          <div className="mt-4">
-            <div className="h-4 bg-gray-200 rounded w-1/3 animate-pulse"></div>
-          </div>
+          {/* Placeholder for event name */}
+          <div className="h-6 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+          {/* Placeholder for event type */}
+          <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div>
         </div>
-      </motion.div>
-    );
-  };
-  
+        {/* Placeholder for button */}
+        <div className="h-10 bg-gray-200 rounded w-24 animate-pulse"></div>
+      </div>
+
+      <div className="space-y-2">
+        {/* Placeholder for date */}
+        <div className="flex items-center">
+          <div className="h-4 bg-gray-200 rounded w-4 mr-2 animate-pulse"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div>
+        </div>
+        {/* Placeholder for location */}
+        <div className="flex items-center">
+          <div className="h-4 bg-gray-200 rounded w-4 mr-2 animate-pulse"></div>
+          <div className="h-4 bg-gray-200 rounded w-2/3 animate-pulse"></div>
+        </div>
+        {/* Placeholder for contact */}
+        <div className="mt-4">
+          <div className="h-4 bg-gray-200 rounded w-1/3 animate-pulse"></div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
 
 // Pagination Component
 const Pagination = ({ currentPage, totalPages, onPageChange }) => {
@@ -219,6 +219,9 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
 
 // Main Component
 export default function EventMarketplace() {
+  const { user, loading } = useAuth(); // Get user and loading state
+  const router = useRouter();
+
   const [filters, setFilters] = useState({
     search: '',
     region: 'all',
@@ -243,6 +246,12 @@ export default function EventMarketplace() {
   const [events, setEvents] = useState([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
 
+  // Redirect unauthenticated users
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login'); // Redirect to login if not authenticated
+    }
+  }, [user, loading, router]);
 
   // Fetch cities on component mount
   useEffect(() => {
@@ -276,7 +285,7 @@ export default function EventMarketplace() {
         setLoadingEvents(false);
       }
     };
-  
+
     fetchEvents();
   }, []);
 
@@ -319,23 +328,23 @@ export default function EventMarketplace() {
 
   const filteredEvents = useMemo(() => {
     return events.filter(event => {
-      const searchMatch = !filters.search || 
+      const searchMatch = !filters.search ||
         event.name.toLowerCase().includes(filters.search.toLowerCase()) ||
         event.city.toLowerCase().includes(filters.search.toLowerCase());
-  
+
       const cityMatch = !filters.city ||
         event.city.toLowerCase().includes(filters.city.toLowerCase());
-  
+
       const regionMatch = filters.region === "all" || // Show all events if region is "all"
         event.region === filters.region;
-  
+
       const dateFrom = filters.dateRange.from ? new Date(filters.dateRange.from) : null;
       const dateTo = filters.dateRange.to ? new Date(filters.dateRange.to) : null;
       const eventDate = new Date(event.date);
-      
-      const dateMatch = (!dateFrom && !dateTo) || 
+
+      const dateMatch = (!dateFrom && !dateTo) ||
         (eventDate >= dateFrom && eventDate <= dateTo);
-  
+
       return searchMatch && cityMatch && regionMatch && dateMatch;
     }).sort((a, b) => {
       if (sortOrder === 'date-asc') {
@@ -346,7 +355,6 @@ export default function EventMarketplace() {
       return 0;
     });
   }, [events, filters, sortOrder]);
-  
 
   const indexOfLastEvent = currentPage * itemsPerPage;
   const indexOfFirstEvent = indexOfLastEvent - itemsPerPage;
@@ -378,6 +386,16 @@ export default function EventMarketplace() {
     dateRange: 'Date Range',
   };
 
+  // Render a loading state if still verifying authentication
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  // Render an empty page if unauthenticated (router.push will handle navigation)
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-indigo-50 p-24">
       {/* Header */}
@@ -393,7 +411,7 @@ export default function EventMarketplace() {
           Browse and accept photography opportunities in your area
         </p>
       </motion.div>
-  
+
       {/* Main Content Container */}
       <div className="max-w-7xl mx-auto">
         {/* Search and Filters */}
@@ -408,7 +426,7 @@ export default function EventMarketplace() {
                 onChange={(e) => handleFilterChange('search', e.target.value)}
               />
             </div>
-  
+
             {/* City Search */}
             <div className="relative">
               <SearchIcon className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
@@ -419,7 +437,7 @@ export default function EventMarketplace() {
                 onChange={(e) => handleFilterChange('city', e.target.value)}
               />
             </div>
-  
+
             {/* Event Type Selector */}
             <Select onValueChange={(value) => handleFilterChange('type', value)}>
               <SelectTrigger>
@@ -433,7 +451,7 @@ export default function EventMarketplace() {
                 ))}
               </SelectContent>
             </Select>
-  
+
             <Select
               value={filters.region}
               onValueChange={(value) => setFilters({ ...filters, region: value })}
@@ -454,7 +472,7 @@ export default function EventMarketplace() {
                 </SelectGroup>
               </SelectContent>
             </Select>
-  
+
             {/* Date Range Selector */}
             <Popover>
               <PopoverTrigger asChild>
@@ -488,7 +506,7 @@ export default function EventMarketplace() {
               </PopoverContent>
             </Popover>
           </div>
-  
+
           {/* Active Filters */}
           {activeFilters.length > 0 && (
             <div className="flex flex-wrap gap-2">
@@ -501,7 +519,7 @@ export default function EventMarketplace() {
                 } else {
                   valueText = filters[filter];
                 }
-  
+
                 return (
                   <Badge key={filter} variant="secondary" className="px-3 py-1">
                     {filterLabels[filter]}: {valueText}
@@ -536,7 +554,7 @@ export default function EventMarketplace() {
             </div>
           )}
         </div>
-  
+
         {/* View Toggle and Sort */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex gap-2">
@@ -567,7 +585,7 @@ export default function EventMarketplace() {
             </SelectContent>
           </Select>
         </div>
-  
+
         {/* Content Views */}
         <AnimatePresence mode="wait">
           {viewMode === 'grid' ? (
@@ -606,10 +624,10 @@ export default function EventMarketplace() {
             </motion.div>
           )}
         </AnimatePresence>
-  
+
         {/* Pagination */}
         {renderPagination()}
-  
+
         {/* No Results */}
         {filteredEvents.length === 0 && !loadingEvents && (
           <motion.div

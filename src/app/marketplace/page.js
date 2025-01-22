@@ -1,5 +1,7 @@
 "use client";
 
+import { db } from '../../lib/firebaseConfig'; // Adjust the import path as necessary
+import { collection, getDocs } from 'firebase/firestore';
 import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -151,6 +153,45 @@ const EventCard = ({ event }) => (
   </motion.div>
 );
 
+const SkeletonCard = () => {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative border rounded-lg p-6 bg-white shadow-md"
+      >
+        <div className="flex justify-between items-start mb-4">
+          <div className="space-y-2">
+            {/* Placeholder for event name */}
+            <div className="h-6 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+            {/* Placeholder for event type */}
+            <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div>
+          </div>
+          {/* Placeholder for button */}
+          <div className="h-10 bg-gray-200 rounded w-24 animate-pulse"></div>
+        </div>
+  
+        <div className="space-y-2">
+          {/* Placeholder for date */}
+          <div className="flex items-center">
+            <div className="h-4 bg-gray-200 rounded w-4 mr-2 animate-pulse"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div>
+          </div>
+          {/* Placeholder for location */}
+          <div className="flex items-center">
+            <div className="h-4 bg-gray-200 rounded w-4 mr-2 animate-pulse"></div>
+            <div className="h-4 bg-gray-200 rounded w-2/3 animate-pulse"></div>
+          </div>
+          {/* Placeholder for contact */}
+          <div className="mt-4">
+            <div className="h-4 bg-gray-200 rounded w-1/3 animate-pulse"></div>
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
+  
+
 // Pagination Component
 const Pagination = ({ currentPage, totalPages, onPageChange }) => {
   return (
@@ -199,41 +240,9 @@ export default function EventMarketplace() {
 
   const eventTypes = ['Wedding', 'Corporate', 'Birthday', 'Concert', 'Sports'];
 
-  const sampleEvents = [
-    {
-      id: 1,
-      name: 'Summer Wedding Celebration',
-      type: 'Wedding',
-      date: '2025-06-21',
-      address: '123 Beach Blvd',
-      city: 'Jerusalem',
-      region: 'Jerusalem District',
-      contactName: 'Emily Johnson',
-    },
-    {
-      id: 2,
-      name: 'Tech Conference 2025',
-      type: 'Corporate',
-      date: '2025-03-15',
-      address: '456 Innovation Way',
-      city: 'Tel Aviv',
-      region: 'Tel Aviv District',
-      contactName: 'Michael Chen',
-    },
-    {
-      id: 3,
-      name: 'Rock Festival Weekend',
-      type: 'Concert',
-      date: '2025-07-04',
-      address: '789 Music Lane',
-      city: 'Haifa',
-      region: 'Haifa District',
-      contactName: 'Sarah Wilson',
-    },
-    // Add more sample events as needed
-  ];
+  const [events, setEvents] = useState([]);
+  const [loadingEvents, setLoadingEvents] = useState(true);
 
-  const events = sampleEvents;
 
   // Fetch cities on component mount
   useEffect(() => {
@@ -249,6 +258,26 @@ export default function EventMarketplace() {
     };
 
     loadCities();
+  }, []);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const eventsCollection = collection(db, 'events');
+        const eventsSnapshot = await getDocs(eventsCollection);
+        const eventsList = eventsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setEvents(eventsList);
+      } catch (error) {
+        console.error('Error fetching events:', error);
+      } finally {
+        setLoadingEvents(false);
+      }
+    };
+  
+    fetchEvents();
   }, []);
 
   // Handle filter changes
@@ -364,7 +393,7 @@ export default function EventMarketplace() {
           Browse and accept photography opportunities in your area
         </p>
       </motion.div>
-
+  
       {/* Main Content Container */}
       <div className="max-w-7xl mx-auto">
         {/* Search and Filters */}
@@ -379,7 +408,7 @@ export default function EventMarketplace() {
                 onChange={(e) => handleFilterChange('search', e.target.value)}
               />
             </div>
-
+  
             {/* City Search */}
             <div className="relative">
               <SearchIcon className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
@@ -390,7 +419,7 @@ export default function EventMarketplace() {
                 onChange={(e) => handleFilterChange('city', e.target.value)}
               />
             </div>
-
+  
             {/* Event Type Selector */}
             <Select onValueChange={(value) => handleFilterChange('type', value)}>
               <SelectTrigger>
@@ -404,30 +433,28 @@ export default function EventMarketplace() {
                 ))}
               </SelectContent>
             </Select>
-
-
+  
             <Select
-  value={filters.region}
-  onValueChange={(value) => setFilters({ ...filters, region: value })}
->
-  <SelectTrigger className="w-[180px]">
-    <SelectValue placeholder="Select Region" />
-  </SelectTrigger>
-  <SelectContent>
-    <SelectGroup>
-      <SelectItem value="all">All Regions</SelectItem> {/* Use "all" instead of "" */}
-      <SelectItem value="North">North</SelectItem>
-      <SelectItem value="Haifa">Haifa</SelectItem>
-      <SelectItem value="Center">Center</SelectItem>
-      <SelectItem value="Tel Aviv">Tel Aviv</SelectItem>
-      <SelectItem value="South">South</SelectItem>
-      <SelectItem value="Judea and Samaria">Judea and Samaria</SelectItem>
-      <SelectItem value="Jerusalem">Jerusalem</SelectItem>
-    </SelectGroup>
-  </SelectContent>
-</Select>
-
-
+              value={filters.region}
+              onValueChange={(value) => setFilters({ ...filters, region: value })}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select Region" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="all">All Regions</SelectItem>
+                  <SelectItem value="North">North</SelectItem>
+                  <SelectItem value="Haifa">Haifa</SelectItem>
+                  <SelectItem value="Center">Center</SelectItem>
+                  <SelectItem value="Tel Aviv">Tel Aviv</SelectItem>
+                  <SelectItem value="South">South</SelectItem>
+                  <SelectItem value="Judea and Samaria">Judea and Samaria</SelectItem>
+                  <SelectItem value="Jerusalem">Jerusalem</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+  
             {/* Date Range Selector */}
             <Popover>
               <PopoverTrigger asChild>
@@ -440,14 +467,14 @@ export default function EventMarketplace() {
                     : 'Select dates'}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto z-[1000]p-0" align="start">
+              <PopoverContent className="w-auto z-[1000] p-0" align="start">
                 <Calendar
                   initialFocus
                   mode="range"
                   defaultMonth={filters.dateRange?.from || new Date()}
                   selected={{
                     from: filters.dateRange.from,
-                    to: filters.dateRange.to
+                    to: filters.dateRange.to,
                   }}
                   onSelect={(range) => {
                     const validatedRange = {
@@ -461,7 +488,7 @@ export default function EventMarketplace() {
               </PopoverContent>
             </Popover>
           </div>
-
+  
           {/* Active Filters */}
           {activeFilters.length > 0 && (
             <div className="flex flex-wrap gap-2">
@@ -474,7 +501,7 @@ export default function EventMarketplace() {
                 } else {
                   valueText = filters[filter];
                 }
-
+  
                 return (
                   <Badge key={filter} variant="secondary" className="px-3 py-1">
                     {filterLabels[filter]}: {valueText}
@@ -509,7 +536,7 @@ export default function EventMarketplace() {
             </div>
           )}
         </div>
-
+  
         {/* View Toggle and Sort */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex gap-2">
@@ -540,7 +567,7 @@ export default function EventMarketplace() {
             </SelectContent>
           </Select>
         </div>
-
+  
         {/* Content Views */}
         <AnimatePresence mode="wait">
           {viewMode === 'grid' ? (
@@ -552,9 +579,17 @@ export default function EventMarketplace() {
               exit={{ opacity: 0 }}
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
             >
-              {currentEvents.map((event) => (
-                <EventCard key={event.id} event={event} />
-              ))}
+              {loadingEvents ? (
+                // Show skeleton cards while loading
+                Array.from({ length: 6 }).map((_, index) => (
+                  <SkeletonCard key={index} />
+                ))
+              ) : (
+                // Show actual event cards when data is loaded
+                currentEvents.map((event) => (
+                  <EventCard key={event.id} event={event} />
+                ))
+              )}
             </motion.div>
           ) : (
             <motion.div
@@ -565,19 +600,18 @@ export default function EventMarketplace() {
               className="rounded-xl overflow-hidden shadow-lg"
             >
               <IsraelMap
-                
                 events={currentEvents}
                 onEventSelect={(event) => console.log('Selected:', event)}
               />
             </motion.div>
           )}
         </AnimatePresence>
-
+  
         {/* Pagination */}
         {renderPagination()}
-
+  
         {/* No Results */}
-        {filteredEvents.length === 0 && (
+        {filteredEvents.length === 0 && !loadingEvents && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -589,7 +623,7 @@ export default function EventMarketplace() {
               onClick={() => {
                 setFilters({
                   search: '',
-                  region: '',
+                  region: 'all',
                   city: '',
                   type: '',
                   dateRange: { from: null, to: null },

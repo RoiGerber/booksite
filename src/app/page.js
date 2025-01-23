@@ -97,7 +97,8 @@ function BookPage({ book, onBack, onAddToCart }) {
           <div>
             <h1 className="text-4xl font-bold text-indigo-900 mb-2">{book.title}</h1>
             <p className="text-xl text-indigo-700 mb-4">מאת {book.author}</p>
-            <p className="text-3xl font-bold text-indigo-900 mb-6">₪{book.price}</p>
+            <p className="text-3xl font-bold text-indigo-900">₪{book.price}</p>
+            <p className="text-1xl  text-indigo-900  mb-6">כולל משלוח</p>
             <p className="text-gray-700 mb-6">{book.description}</p>
             
             {/* Add to Cart Section */}
@@ -720,7 +721,7 @@ function OrderConfirmation({ onReturnHome }) {
 
 function RecommendationsSection() {
   const recommendations = [
-    { text: "קניתי את ספרך בהדסטארט וקיבלתי אותו השבוע. קראתי אותו ואני רוצה לומר לך שהספר פשוט אדיר! נהניתי, השכלתי והתענגתי. לא יודע איך כתבת ספר היסטוריה קולח, מעניין ומצחיק תוך כדי שירות קרבי, אבל עשית זאת בצורה נהדרת. ", author: "1 קורא נלהב" },
+    { text: "קניתי את ספרך בהדסטארט וקיבלתי אותו השבוע. קראתי אותו ואני רוצה לומר לך שהספר פשוט אדיר! נהניתי, השכלתי והתענגתי. לא יודע איך כתבת ספר היסטוריה קולח, מעניין ומצחיק תוך כדי שירות קרבי, אבל עשית זאת בצורה נהדרת. ", author: "קורא נלהב 1" },
     { text: "קראתי את הספר שלך ורציתי לומר לך שמאד נהניתי. אהבתי את דרך הכתיבה שלך,את ההומור,וגם בגילי,55,למדתי דברים חדשים שלא ידעתי על ההיסטוריה העולמית.ישר כח ותודה לך על הספר.", author: "קורא נלהב 2" },
     { text: "הייתי בכינרת לפני כשעה, שמעתי אבא שואל את הילדים הקטנים שלו שאלות מעניינות בהיסטוריה, ותהיתי מאיפה הידע הכללי הכה מיוחד של הילדים. שאלתי אותו ואמר שקנה פעם בהדסטארט ספר עם תפיסה קצת שונה לגבי ההיסטוריה", author: "קורא נלהב 3" },
   ]
@@ -844,6 +845,7 @@ function PurchaseSection({ onBookSelect }) {
                   <div>
                     <h3 className="text-2xl font-semibold mb-4">{item.title}</h3>
                     <p className="text-4xl font-bold mb-4">{item.price} &#8362;</p>
+                    <p className="text-2xl"> כולל משלוח</p>
                     {item.discount && <p className="mb-6 text-sm">{item.discount}</p>}
                   </div>
                   <Button 

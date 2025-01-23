@@ -1,30 +1,26 @@
 import './globals.css'
 import { Heebo } from 'next/font/google'
-import Navbar from '@/components/Navbar';
-import { AuthProvider } from '@/lib/auth';
 
 const heebo = Heebo({ subsets: ['hebrew', 'latin'] })
 
 export const metadata = {
-  title: 'Snapper',
-  description: 'connects photographers and their clients',
+  title: 'רועי בנימין גרבר',
+  description: 'האתר הרשמי של רועי בנימין גרבר. מתמטיקאי, היסטוריון וסופר חובב.',
 }
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-
-  
   return (
     <html lang="he" dir="rtl">
-      <body>
-        <AuthProvider>
-          <Navbar />
-          {children}
-        </AuthProvider>
+                
+
+      <body className={`${heebo.className} bg-gradient-to-br from-indigo-50 via-white to-purple-50 text-gray-800`}>
+        {children}
       </body>
     </html>
-  );
+  )
 }
+

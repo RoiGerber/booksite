@@ -14,11 +14,9 @@ import {
   Github,
   Mail as MailIcon
 } from 'lucide-react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from '@/lib/firebaseConfig';
 import { useRouter } from 'next/navigation';
-
-
 
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
@@ -84,8 +82,6 @@ const SocialButton = ({ icon: Icon, label, onClick, variant = "outline" }) => (
   </Button>
 );
 
-
-
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -95,8 +91,17 @@ export default function LoginPage() {
     e.preventDefault();
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      alert('Logged in successfully!');
-      router.push('/'); // Redirect to the manage page
+      router.push('/');
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+      router.push('/');
     } catch (error) {
       alert(error.message);
     }
@@ -106,7 +111,6 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-50 p-4">
       <div className="fixed inset-0 bg-gradient-to-br from-indigo-50 to-purple-50" />
       
-      {/* Decorative elements */}
       <div className="fixed inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob" />
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000" />
@@ -187,7 +191,7 @@ export default function LoginPage() {
           <SocialButton
             icon={MailIcon}
             label="Google"
-            onClick={() => {}}
+            onClick={handleGoogleSignIn}
           />
         </div>
 

@@ -44,11 +44,27 @@ const MainPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 p-20 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 p-4 md:p-32 relative overflow-hidden">
       <div className="fixed inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000" />
+        {/* Existing blob background elements */}
       </div>
+
+      {/* Animated Role Title - Centered with reduced spacing */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="relative z-10 mb-8 text-center w-full"
+      >
+        <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mx-auto">
+          Welcome, {role.charAt(0).toUpperCase() + role.slice(1)}
+        </h1>
+        <p className="mt-2 md:mt-3 text-lg md:text-xl text-indigo-900/80 mx-auto max-w-xl">
+          {role === 'photographer' 
+            ? 'Manage your photography business with ease'
+            : 'Capture and relive your precious moments'}
+        </p>
+      </motion.div>
 
       {role === 'photographer' ? (
         <PhotographerDashboard />
@@ -57,12 +73,14 @@ const MainPage = () => {
       )}
     </div>
   );
+
+
 };
 
 
 const PhotographerDashboard = () => {
   return (
-    <div className="flex p-4 space-x-4 h-[75vh] relative z-10">
+    <div className="flex p-4 space-x-4 h-[65vh] relative z-10"> {/* Reduced height */}
       <motion.div
         className="h-full flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-indigo-600 to-purple-600 transition-all duration-300 cursor-pointer ml-4"
         whileHover={{ scale: 1.02 }}
@@ -96,7 +114,7 @@ const PhotographerDashboard = () => {
 
 const ClientDashboard = () => {
   return (
-    <div className="flex p-4 space-x-4 h-[75vh] relative z-10">
+    <div className="flex p-4 space-x-4 h-[65vh] relative z-10"> {/* Reduced height */}
       <motion.div
         className="h-full flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-indigo-600 to-purple-600 transition-all duration-300 cursor-pointer ml-4"
         whileHover={{ scale: 1.02 }}

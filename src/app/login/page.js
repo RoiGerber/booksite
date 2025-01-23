@@ -96,7 +96,7 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       alert('Logged in successfully!');
-      router.push('/manage'); // Redirect to the manage page
+      router.push('/'); // Redirect to the manage page
     } catch (error) {
       alert(error.message);
     }
